@@ -10,6 +10,7 @@ export interface IUser {
 	picture: string;
 	followers: mongoose.Schema.Types.ObjectId[];
 	following: mongoose.Schema.Types.ObjectId[];
+	createdAt?: Date;
 }
 
 const UserScheme = new mongoose.Schema<IUser>(
