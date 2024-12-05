@@ -5,8 +5,9 @@ import { Request, Response, NextFunction } from 'express';
 import User, { UserDocument } from '../models/userModel';
 import { email_regex, password_regex } from '../utils/regex';
 import { deleteFile, sendEmail } from '../utils/functions';
-import Post from '../models/postModel';
-import Comment from '../models/commentModel';
+import { deleteUserCommentsAndReplies } from './commentController';
+import { deleteUserPosts } from './postController';
+import { ObjectId } from 'mongoose';
 
 const login = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -120,24 +121,26 @@ const register = asyncHandler(
 const deleteUser = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
 		const user = req.user!;
+		const id = (user._id as ObjectId).toString();
 		// delete all followers and following
 		let promises: Promise<any>[] = [];
 		promises.push(
 			User.updateMany(
 				{ _id: { $in: user.followers } },
-				{ $pull: { following: user._id } }
+				{ $pull: { following: id } }
 			)
 		);
 		promises.push(
 			User.updateMany(
 				{ _id: { $in: user.following } },
-				{ $pull: { followers: user._id } }
+				{ $pull: { followers: id } }
 			)
 		);
 		promises.push(deleteFile(user.picture));
-		promises.push(User.findByIdAndDelete(user._id));
+		promises.push(deleteUserPosts(id));
+		promises.push(deleteUserCommentsAndReplies(id));
+		promises.push(User.findByIdAndDelete(id));
 		await Promise.all(promises);
-		// TODO: delete all posts and comments (create delete post and comment controllers)
 		res.json({
 			success: true,
 		});
