@@ -1,4 +1,5 @@
 import components from './components';
+import userPaths from './userPaths';
 
 const swaggerSpec = {
 	openapi: '3.1.0',
@@ -12,7 +13,7 @@ const swaggerSpec = {
 			url: 'http://localhost:3000',
 		},
 	],
-	paths: {},
+	paths: {...userPaths},
 	components
 };
 

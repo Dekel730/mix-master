@@ -1,4 +1,43 @@
+export const errorHandler = (
+	statusCode: number,
+	description: string,
+	errorMessage: string
+) => {
+	const error = {
+		[statusCode]: {
+			description: description,
+			content: {
+				'application/json': {
+					schema: {
+						type: 'object',
+						properties: {
+							success: {
+								type: 'boolean',
+								example: false,
+							},
+							message: {
+								type: 'string',
+								example: errorMessage,
+							},
+						},
+					},
+				},
+			},
+		},
+	};
+	return error;
+};
+
 const components = {
+	securitySchemes: {
+		jwtAuth: {
+			type: 'apiKey',
+			in: 'header',
+			name: 'Authorization',
+			description:
+				'Enter your JWT token directly in the `Authorization` header (without a `Bearer` prefix).',
+		},
+	},
 	schemas: {
 		User: {
 			type: 'object',
