@@ -8,6 +8,7 @@ import {
 	getUser,
 	updateUser,
 	googleLogin,
+	resendEmail,
 } from '../controllers/userController';
 import upload from '../config/storage';
 
@@ -20,5 +21,6 @@ router.delete('/', authUser, deleteUser);
 router.get('/', authUser, getUser);
 router.put('/', authUser, upload.single('picture'), updateUser);
 router.post('/google', googleLogin);
+router.post('/resend', resendEmail);
 
 export default router;
