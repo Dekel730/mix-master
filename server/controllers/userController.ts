@@ -110,6 +110,7 @@ const register = asyncHandler(
 			'Verify your email',
 			`please verify your email: http://localhost:3000/verify/${user._id}`
 		);
+		res.status(201);
 		res.json({
 			success: true,
 			message: 'User created successfully',
@@ -143,6 +144,7 @@ const deleteUser = asyncHandler(
 		await Promise.all(promises);
 		res.json({
 			success: true,
+			message: 'User deleted successfully',
 		});
 	}
 );
@@ -208,7 +210,7 @@ const refresh = asyncHandler(
 		const refreshToken: string = req.cookies['refreshToken'];
 		if (!refreshToken) {
 			res.status(400);
-			throw new Error('No refresh token provided.');
+			throw new Error('No refresh token provided');
 		}
 		try {
 			const decoded = jwt.verify(

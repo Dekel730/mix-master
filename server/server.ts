@@ -4,10 +4,12 @@ import connectDB from './config/db';
 import mongoSanitize from 'express-mongo-sanitize';
 import errorHandler from './middleware/errorMiddleware';
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from './doc/swagger';
 
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 const app: Express = express();
 
@@ -23,5 +25,7 @@ connectDB(() => {
 		});
 	}
 });
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(errorHandler);
