@@ -6,6 +6,8 @@ import errorHandler from './middleware/errorMiddleware';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './doc/swagger';
+import userRoutes from './routes/userRoutes';
+import './types/types';
 
 dotenv.config();
 
@@ -28,4 +30,8 @@ connectDB(() => {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+app.use('/api/user', userRoutes);
+
 app.use(errorHandler);
+
+export default app;

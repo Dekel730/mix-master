@@ -1,0 +1,19 @@
+meta {
+  name: Register User
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3000/api/user/register
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  picture: @file(/private/var/folders/y6/bdkswwnx5dxg6g9vdhbbtcyh0000gn/T/com.apple.Photos.NSItemProvider/uuid=DF49A171-944B-48FC-B493-AE0C6BC7AB69&code=001&library=1&type=1&mode=1&loc=true&cap=true.jpeg/2f175659-38cd-4552-b3b6-4f02a91a9054.jpeg)
+  f_name: Omer
+  l_name: Gaizinger
+  email: omerg8632@gmail.com
+  password: Admin123
+}

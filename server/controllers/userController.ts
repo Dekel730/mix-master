@@ -97,19 +97,33 @@ const register = asyncHandler(
 				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
 			);
 		}
+		const userFound = await User.findOne({
+			email: { $regex: new RegExp(`^${email}$`, 'i') },
+		});
+		if (userFound) {
+			if (req.file) {
+				await deleteFile(req.file.path);
+			}
+			res.status(400);
+			throw new Error('User already exists');
+		}
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
 		const user = new User({
 			f_name,
 			l_name,
 			email,
-			password,
+			password: hashedPassword,
 			picture: req.file ? req.file.path : undefined,
 		});
-		user.save();
-		const sent = await sendEmail(
+		let promises: Promise<any>[] = [];
+		promises.push(user.save());
+		promises.push(sendEmail(
 			email,
 			'Verify your email',
 			`please verify your email: http://localhost:3000/verify/${user._id}`
-		);
+		));
+		const [userSaved, sent] = await Promise.all(promises);
 		res.status(201);
 		res.json({
 			success: true,
@@ -235,6 +249,36 @@ const refresh = asyncHandler(
 	}
 );
 
+const resendEmail = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const { email } = req.body;
+		if (!email_regex.test(email)) {
+			res.status(400);
+			throw new Error('Invalid email');
+		}
+		const user = await User.findOne({
+			email: { $regex: new RegExp(`^${email}$`, 'i') },
+		});
+		if (!user) {
+			res.status(400);
+			throw new Error('User not found');
+		}
+		if (user.isVerified) {
+			res.status(400);
+			throw new Error('Email already verified');
+		}
+		const sent = await sendEmail(
+			user.email,
+			'Verify your email',
+			`please verify your email: http://localhost:3000/verify/${user._id}`
+		);
+		res.json({
+			success: true,
+			sent,
+		});
+	}
+);
+
 const googleLogin = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {}
 );
@@ -247,4 +291,5 @@ export {
 	updateUser,
 	refresh,
 	googleLogin,
+	resendEmail
 };

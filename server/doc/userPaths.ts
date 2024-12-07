@@ -460,6 +460,54 @@ const userPaths = {
 			},
 		},
 	},
+	'/api/user/resend': {
+		post: {
+			tags: ['Users'],
+			summary: 'Resend verification email',
+			description: 'Resend verification email to user',
+			requestBody: {
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								email: {
+									type: 'string',
+									format: 'email',
+									description: 'Email address of the user',
+								},
+							},
+							required: ['email'],
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: 'Email sent',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+										example: true,
+									},
+									sent: {
+										type: 'boolean',
+										example: 'true',
+									},
+								},
+							},
+						},
+					},
+				},
+				...errorHandler(400, 'Invalid input', 'Invalid email'),
+				...errorHandler(500, 'Some server error', 'Server error'),
+			},
+		},
+	},
 };
 
 export default userPaths;

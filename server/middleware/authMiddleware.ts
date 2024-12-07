@@ -2,7 +2,6 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import { NextFunction, Request, Response } from 'express';
 import User, { UserDocument } from '../models/userModel';
-import { RequestWithUser } from '../types/request';
 
 const authUser = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction) => {
@@ -18,11 +17,9 @@ const authUser = asyncHandler(
 				process.env.JWT_SECRET!
 			) as JwtPayload;
 
-			(req as RequestWithUser).user = await User.findById(
-				decoded.id
-			).select('-password');
+			req.user = await User.findById(decoded.id).select('-password');
 
-			if (!(req as RequestWithUser).user) {
+			if (!req.user) {
 				res.status(404);
 				throw new Error('User not found');
 			}
