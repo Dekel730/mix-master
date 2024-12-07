@@ -9,6 +9,8 @@ export interface IPost {
 	likes: mongoose.Schema.Types.ObjectId[];
 	comments: mongoose.Schema.Types.ObjectId[];
 	ai: boolean;
+	createdAt?: Date;
+	updatedAt?: Date;
 }
 
 export interface Ingredient {

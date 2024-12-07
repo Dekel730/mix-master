@@ -7,6 +7,8 @@ export interface IComment {
 	likes: mongoose.Schema.Types.ObjectId[];
 	parentComment: mongoose.Schema.Types.ObjectId | undefined;
 	replies: mongoose.Schema.Types.ObjectId[];
+	createdAt?: Date;
+	updatedAt?: Date;
 }
 
 const CommentScheme = new mongoose.Schema<IComment>(
