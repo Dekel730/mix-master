@@ -12,5 +12,8 @@ const deleteUserCommentsAndReplies = async (userId: string): Promise<void> => {
 	await Promise.all(promises);
 };
 
+const deletePostComments = async (postId: string): Promise<void> => {
+	await Comment.deleteMany({ post: postId });
+};
 
-export { deleteUserCommentsAndReplies };
+export { deleteUserCommentsAndReplies, deletePostComments };

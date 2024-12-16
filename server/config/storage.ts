@@ -1,6 +1,5 @@
 import { Request } from 'express';
 import multer, { StorageEngine } from 'multer';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import mime from 'mime-types';
 import fs from 'fs';
