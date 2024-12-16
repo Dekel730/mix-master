@@ -33,7 +33,7 @@ const authUser = asyncHandler(
 			try {
 				const decoded = jwt.verify(
 					refreshToken,
-					process.env.JWT_SECRET!
+					process.env.JWT_SECRET_REFRESH!
 				) as JwtPayload;
 
 				const accessToken = jwt.sign(

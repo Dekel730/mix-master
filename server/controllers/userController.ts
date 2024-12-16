@@ -5,7 +5,10 @@ import { Request, Response, NextFunction } from 'express';
 import User, { UserDocument } from '../models/userModel';
 import { email_regex, password_regex } from '../utils/regex';
 import { deleteFile, sendEmail } from '../utils/functions';
-import { deleteUserCommentsAndReplies } from './commentController';
+import {
+	deletePostComments,
+	deleteUserCommentsAndReplies,
+} from './commentController';
 import { deleteUserPosts } from './postController';
 import { ObjectId } from 'mongoose';
 
@@ -41,7 +44,7 @@ const login = asyncHandler(
 		);
 		const refreshToken = jwt.sign(
 			{ id: user._id },
-			process.env.JWT_SECRET!,
+			process.env.JWT_SECRET_REFRESH!,
 			{ expiresIn: '30d' }
 		);
 
@@ -118,11 +121,13 @@ const register = asyncHandler(
 		});
 		let promises: Promise<any>[] = [];
 		promises.push(user.save());
-		promises.push(sendEmail(
-			email,
-			'Verify your email',
-			`please verify your email: http://localhost:3000/verify/${user._id}`
-		));
+		promises.push(
+			sendEmail(
+				email,
+				'Verify your email',
+				`please verify your email: http://localhost:3000/verify/${user._id}`
+			)
+		);
 		const [userSaved, sent] = await Promise.all(promises);
 		res.status(201);
 		res.json({
@@ -151,10 +156,15 @@ const deleteUser = asyncHandler(
 				{ $pull: { followers: id } }
 			)
 		);
-		promises.push(deleteFile(user.picture));
 		promises.push(deleteUserPosts(id));
+		promises.push(deleteFile(user.picture));
 		promises.push(deleteUserCommentsAndReplies(id));
 		promises.push(User.findByIdAndDelete(id));
+		const [_, _2, posts] = await Promise.all(promises);
+		promises = [];
+		for (let post of posts) {
+			promises.push(deletePostComments(post._id));
+		}
 		await Promise.all(promises);
 		res.json({
 			success: true,
@@ -229,7 +239,7 @@ const refresh = asyncHandler(
 		try {
 			const decoded = jwt.verify(
 				refreshToken,
-				process.env.JWT_SECRET!
+				process.env.JWT_SECRET_REFRESH!
 			) as JwtPayload;
 			const accessToken = jwt.sign(
 				{ id: decoded.id },
@@ -291,5 +301,5 @@ export {
 	updateUser,
 	refresh,
 	googleLogin,
-	resendEmail
+	resendEmail,
 };
