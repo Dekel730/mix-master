@@ -33,13 +33,13 @@ export const sendEmail = async (
 	return success;
 };
 
-export const deleteFile = (filePath: string): Promise<void> => {
+export const deleteFile = (filePath: string): Promise<boolean> => {
 	return new Promise((resolve, reject) => {
 		fs.unlink(filePath, (err) => {
 			if (err) {
-				return reject(err);
+				resolve(false);
 			}
-			resolve();
+			resolve(true);
 		});
 	});
 };
