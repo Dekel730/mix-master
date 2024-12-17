@@ -2,13 +2,10 @@ import request from 'supertest';
 import app from '../server';
 import { beforeAll, describe, expect, it } from '@jest/globals';
 import { getUserId } from '../controllers/userController';
-import FormData from 'form-data';
-import fs from 'fs';
 
 process.env.NODE_ENV = 'test';
 
-var accessToken1: string,
-	userId: string,
+var userId: string,
 	accessToken2: string,
 	refreshToken: string,
 	newUserId: string;
@@ -27,7 +24,6 @@ beforeAll(async () => {
 		email: process.env.TEST_EMAIL_USER_1,
 		password: process.env.TEST_PASSWORD_USER_1,
 	});
-	accessToken1 = res.headers.authorization;
 	userId = res.body.user._id;
 });
 
