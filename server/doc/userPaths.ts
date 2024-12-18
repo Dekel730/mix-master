@@ -320,30 +320,24 @@ const userPaths = {
 	},
 	'/api/user/refresh': {
 		post: {
-			tags: ['Users'],
 			summary: 'Refresh token',
-			description: 'Refresh token for user',
-			parameters: [
+			tags: ['Users'],
+			security: [
 				{
-					in: 'cookie',
-					name: 'refreshToken',
-					required: true,
-					schema: {
-						type: 'string',
-						description:
-							'Refresh token stored as an HTTP-only cookie',
-						example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-					},
+					jwtAuth: [],
 				},
 			],
 			responses: {
 				200: {
-					description: 'Token refreshed',
+					description: 'The token was successfully refreshed',
 					headers: {
-						authorization: {
-							description: 'auth token',
+						Authorization: {
+							description:
+								'JWT token to be used for authenticated requests',
 							schema: {
 								type: 'string',
+								example:
+									'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVJ9...',
 							},
 						},
 					},
@@ -356,25 +350,14 @@ const userPaths = {
 										type: 'boolean',
 										example: true,
 									},
-									message: {
-										type: 'string',
-										example: 'Token refreshed',
-									},
-									token: {
-										type: 'boolean',
-										example: true,
-									},
 								},
 							},
 						},
 					},
 				},
-				...errorHandler(
-					400,
-					'Invalid Refresh Token',
-					'No refresh token provided'
-				),
-				...errorHandler(500, 'Some server error', 'Server error'),
+				...errorHandler(401, 'Invalid token', 'Token failed'),
+				...errorHandler(404, 'Not Found', 'User Not Found'),
+				...errorHandler(500, 'Some server error', 'Server Error'),
 			},
 		},
 	},

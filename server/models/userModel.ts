@@ -11,6 +11,7 @@ export interface IUser {
 	followers: mongoose.Schema.Types.ObjectId[];
 	following: mongoose.Schema.Types.ObjectId[];
 	createdAt?: Date;
+	tokens: string[];
 }
 
 const UserScheme = new mongoose.Schema<IUser>(
@@ -54,6 +55,11 @@ const UserScheme = new mongoose.Schema<IUser>(
 				ref: 'User',
 			},
 		],
+		tokens: {
+			type: [String],
+			required: true,
+			default: [],
+		},
 	},
 	{ timestamps: true }
 );
