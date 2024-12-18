@@ -396,6 +396,44 @@ const refresh = asyncHandler(async (req, res) => {
 	});
 });
 
+const logout = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const authHeader = req.headers['authorization'];
+		const refreshToken = authHeader && authHeader.split(' ')[1];
+		if (!refreshToken) {
+			res.status(400);
+			throw new Error('No refresh token provided.');
+		}
+		let decoded;
+		try {
+			decoded = jwt.verify(
+				refreshToken,
+				process.env.JWT_SECRET_REFRESH!
+			) as JwtPayload;
+		} catch (error) {
+			res.status(400);
+			throw new Error('Token failed');
+		}
+		const user = await User.findById(decoded.id);
+		if (!user) {
+			res.status(404);
+			throw new Error('User not found');
+		}
+		if (!user.tokens.includes(refreshToken)) {
+			user.tokens = [];
+			await user.save();
+			res.status(401);
+			throw new Error('Invalid token');
+		}
+		user.tokens = user.tokens.filter((t) => t !== refreshToken);
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Logged out successfully',
+		});
+	}
+);
+
 const resendEmail = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
 		const { email } = req.body;
@@ -453,4 +491,5 @@ export {
 	followUser,
 	unFollowUser,
 	getUserId,
+	logout,
 };

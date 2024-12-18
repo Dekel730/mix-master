@@ -328,6 +328,48 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(400);
 	});
 
+	it('should return 400 if no token provided - logout', async () => {
+		const res = await request(app).post('/api/user/logout').send({});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if no token provided - logout', async () => {
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('authorization', `Bearer ugwef2gou489gh23o4nfn28nif`)
+			.send({});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 404 if user not found - logout', async () => {
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('authorization', `Bearer ${invalidUserToken}`)
+			.send({});
+		expect(res.statusCode).toEqual(404);
+	});
+
+	it('should return 401 if refresh token expired - logout', async () => {
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('Authorization', `Bearer ${refreshToken}`)
+			.send({});
+		expect(res.statusCode).toEqual(401);
+	});
+
+	it('should return 200 if logged out - logout', async () => {
+		const res1 = await request(app).post('/api/user/login').send({
+			email: user.email,
+			password: user.password,
+		});
+		const newRefreshToken = res1.body.refreshToken;
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('Authorization', `Bearer ${newRefreshToken}`)
+			.send({});
+		expect(res.statusCode).toEqual(200);
+	});
+
 	it('should delete user - deleteUser', async () => {
 		const res = await request(app)
 			.delete('/api/user')
