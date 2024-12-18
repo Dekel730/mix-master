@@ -5,7 +5,13 @@ import { beforeAll, describe, expect, it } from '@jest/globals';
 process.env.NODE_ENV = 'test';
 var refresh_token: string;
 
-beforeAll(() => {});
+beforeAll(async () => {
+	const res = await request(app).post('/api/user/login/').send({
+		email: process.env.TEST_EMAIL_USER_1,
+		password: process.env.TEST_PASSWORD_USER_1,
+	});
+	refresh_token = res.headers['set-cookie'][0];
+});
 
 describe('Middleware auth Test', () => {
 	it('should return 401 if no token provided', async () => {

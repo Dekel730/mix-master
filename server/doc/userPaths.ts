@@ -256,7 +256,7 @@ const userPaths = {
 			description: 'Register user with email and password',
 			requestBody: {
 				content: {
-					'application/json': {
+					'multipart/form-data': {
 						schema: {
 							type: 'object',
 							properties: {
@@ -504,6 +504,144 @@ const userPaths = {
 					},
 				},
 				...errorHandler(400, 'Invalid input', 'Invalid email'),
+				...errorHandler(500, 'Some server error', 'Server error'),
+			},
+		},
+	},
+	'/api/user/verify/{id}': {
+		parameters: [
+			{
+				in: 'path',
+				name: 'id',
+				required: true,
+				schema: {
+					type: 'string',
+				},
+				description: 'The user ID',
+			},
+		],
+		get: {
+			tags: ['Users'],
+			summary: 'Verify user email',
+			description: 'Verify user email with user id',
+			responses: {
+				200: {
+					description: 'User verified',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+										example: true,
+									},
+									message: {
+										type: 'string',
+										example: 'Email verified successfully',
+									},
+								},
+							},
+						},
+					},
+				},
+				...errorHandler(400, 'Invalid input', 'Invalid id'),
+				...errorHandler(500, 'Some server error', 'Server error'),
+			},
+		},
+	},
+	'/api/user/follow/{id}': {
+		parameters: [
+			{
+				in: 'path',
+				name: 'id',
+				required: true,
+				schema: {
+					type: 'string',
+				},
+				description: 'The user ID',
+			},
+		],
+		get: {
+			tags: ['Users'],
+			summary: 'Follow user',
+			description: 'Follow user with user id',
+			security: [
+				{
+					jwtAuth: [],
+				},
+			],
+			responses: {
+				200: {
+					description: 'User followed',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+										example: true,
+									},
+									message: {
+										type: 'string',
+										example: 'User followed successfully',
+									},
+								},
+							},
+						},
+					},
+				},
+				...errorHandler(400, 'Invalid input', 'Invalid id'),
+				...errorHandler(401, 'Unauthorized', 'Invalid credentials'),
+				...errorHandler(500, 'Some server error', 'Server error'),
+			},
+		},
+	},
+	'/api/user/unfollow/{id}': {
+		parameters: [
+			{
+				in: 'path',
+				name: 'id',
+				required: true,
+				schema: {
+					type: 'string',
+				},
+				description: 'The user ID',
+			},
+		],
+		get: {
+			tags: ['Users'],
+			summary: 'Unfollow user',
+			description: 'Unfollow user with user id',
+			security: [
+				{
+					jwtAuth: [],
+				},
+			],
+			responses: {
+				200: {
+					description: 'User unfollowed',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+										example: true,
+									},
+									message: {
+										type: 'string',
+										example: 'User unfollowed successfully',
+									},
+								},
+							},
+						},
+					},
+				},
+				...errorHandler(400, 'Invalid input', 'Invalid id'),
+				...errorHandler(401, 'Unauthorized', 'Invalid credentials'),
 				...errorHandler(500, 'Some server error', 'Server error'),
 			},
 		},
