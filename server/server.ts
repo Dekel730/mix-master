@@ -28,6 +28,16 @@ connectDB(() => {
 	}
 });
 
+app.use((req, res, next) => {
+	res.header('Access-Control-Allow-Origin', '*');
+	res.header('Access-Control-Allow-Headers', '*');
+	res.header('Access-Control-Allow-Methods', '*');
+	next();
+});
+
+// access to upload folder
+app.use('/uploads', express.static('uploads'));
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use('/api/user', userRoutes);
