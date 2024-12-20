@@ -8,6 +8,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './doc/swagger';
 import userRoutes from './routes/userRoutes';
 import './types/types';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -27,6 +28,13 @@ connectDB(() => {
 		});
 	}
 });
+
+app.use(
+	cors({
+		origin: process.env.HOST_ADDRESS,
+		credentials: true,
+	})
+);
 
 app.use((req, res, next) => {
 	res.header('Access-Control-Allow-Origin', '*');
