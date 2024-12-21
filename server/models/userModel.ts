@@ -4,6 +4,7 @@ export interface IUser {
 	f_name: string;
 	l_name: string;
 	email: string;
+	bio?: string;
 	password: string;
 	isVerified: boolean;
 	resetPasswordToken: string;
@@ -32,6 +33,9 @@ const UserScheme = new mongoose.Schema<IUser>(
 		password: {
 			type: String,
 			required: true,
+		},
+		bio: {
+			type: String,
 		},
 		isVerified: {
 			type: Boolean,

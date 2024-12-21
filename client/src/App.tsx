@@ -23,6 +23,23 @@ function App() {
 		localStorage.setItem('isAuthenticated', String(isAuthenticated));
 	}, [isAuthenticated]);
 
+	// Update state when localStorage changes
+	useEffect(() => {
+		const handleStorageChange = (event: StorageEvent) => {
+			if (event.key === 'isAuthenticated') {
+				setIsAuthenticated(event.newValue === 'true');
+			}
+		};
+
+		// Add the storage event listener
+		window.addEventListener('storage', handleStorageChange);
+
+		// Clean up the event listener
+		return () => {
+			window.removeEventListener('storage', handleStorageChange);
+		};
+	}, []);
+
 	return (
 		<>
 			<ToastContainer theme="colored" />
@@ -96,7 +113,7 @@ function App() {
 							}
 						/>
 						<Route
-							path="/users/:id"
+							path="/user/:id"
 							element={
 								<ProtectedRoute
 									isAuthenticated={isAuthenticated}

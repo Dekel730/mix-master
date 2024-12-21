@@ -126,13 +126,18 @@ const getAccessToken = async (): Promise<string | null> => {
 
 export const authGet = async (
 	url: string,
-	onFail: (message: string, auth?: boolean) => void,
+	onFail: (message: string) => void,
 	onSuccess: (data: any) => void,
 	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		onFail('Failed to get access token', true);
+		localStorage.removeItem('accessToken');
+		localStorage.removeItem('refreshToken');
+		localStorage.removeItem('expiresAt');
+		localStorage.removeItem('user');
+		localStorage.removeItem('isAuthenticated');
+		onFail('Please login to continue');
 		return;
 	}
 	try {
@@ -155,13 +160,18 @@ export const authGet = async (
 export const authPost = async (
 	url: string,
 	data: any,
-	onFail: (message: string, auth?: boolean) => void,
+	onFail: (message: string) => void,
 	onSuccess: (data: any) => void,
 	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		onFail('Failed to get access token', true);
+		localStorage.removeItem('accessToken');
+		localStorage.removeItem('refreshToken');
+		localStorage.removeItem('expiresAt');
+		localStorage.removeItem('user');
+		localStorage.removeItem('isAuthenticated');
+		onFail('Please login to continue');
 		return;
 	}
 	try {
@@ -184,13 +194,18 @@ export const authPost = async (
 export const authPut = async (
 	url: string,
 	data: any,
-	onFail: (message: string, auth?: boolean) => void,
+	onFail: (message: string) => void,
 	onSuccess: (data: any) => void,
 	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		onFail('Failed to get access token', true);
+		localStorage.removeItem('accessToken');
+		localStorage.removeItem('refreshToken');
+		localStorage.removeItem('expiresAt');
+		localStorage.removeItem('user');
+		localStorage.removeItem('isAuthenticated');
+		onFail('Please login to continue');
 		return;
 	}
 	try {
@@ -212,13 +227,18 @@ export const authPut = async (
 
 export const authDel = async (
 	url: string,
-	onFail: (message: string, auth?: boolean) => void,
+	onFail: (message: string) => void,
 	onSuccess: (data: any) => void,
 	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		onFail('Failed to get access token', true);
+		localStorage.removeItem('accessToken');
+		localStorage.removeItem('refreshToken');
+		localStorage.removeItem('expiresAt');
+		localStorage.removeItem('user');
+		localStorage.removeItem('isAuthenticated');
+		onFail('Please login to continue');
 		return;
 	}
 	try {
