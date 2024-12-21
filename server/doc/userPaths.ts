@@ -174,22 +174,6 @@ const userPaths = {
 			responses: {
 				200: {
 					description: 'User logged in',
-					headers: {
-						authorization: {
-							description: 'auth token',
-							schema: {
-								type: 'string',
-							},
-						},
-					},
-					cookies: {
-						refreshToken: {
-							description: 'refresh token',
-							schema: {
-								type: 'string',
-							},
-						},
-					},
 					content: {
 						'application/json': {
 							schema: {
@@ -234,6 +218,16 @@ const userPaths = {
 											},
 										},
 									},
+									accessToken: {
+										type: 'string',
+										description:
+											'Access token for authenticating',
+									},
+									refreshToken: {
+										type: 'string',
+										description:
+											'Refresh token for getting new access token',
+									},
 								},
 							},
 						},
@@ -256,7 +250,7 @@ const userPaths = {
 			description: 'Register user with email and password',
 			requestBody: {
 				content: {
-					'application/json': {
+					'multipart/form-data': {
 						schema: {
 							type: 'object',
 							properties: {
@@ -320,33 +314,58 @@ const userPaths = {
 	},
 	'/api/user/refresh': {
 		post: {
-			tags: ['Users'],
 			summary: 'Refresh token',
-			description: 'Refresh token for user',
-			parameters: [
+			tags: ['Users'],
+			security: [
 				{
-					in: 'cookie',
-					name: 'refreshToken',
-					required: true,
-					schema: {
-						type: 'string',
-						description:
-							'Refresh token stored as an HTTP-only cookie',
-						example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-					},
+					jwtAuth: [],
 				},
 			],
 			responses: {
 				200: {
-					description: 'Token refreshed',
-					headers: {
-						authorization: {
-							description: 'auth token',
+					description: 'The token was successfully refreshed',
+					content: {
+						'application/json': {
 							schema: {
-								type: 'string',
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+										example: true,
+									},
+									accessToken: {
+										type: 'string',
+										description:
+											'Access token for authenticating',
+									},
+									refreshToken: {
+										type: 'string',
+										description:
+											'Refresh token for getting new access token',
+									},
+								},
 							},
 						},
 					},
+				},
+				...errorHandler(401, 'Invalid token', 'Token failed'),
+				...errorHandler(404, 'Not Found', 'User Not Found'),
+				...errorHandler(500, 'Some server error', 'Server Error'),
+			},
+		},
+	},
+	'/api/user/logout': {
+		post: {
+			summary: 'Logout user',
+			tags: ['Users'],
+			security: [
+				{
+					jwtAuth: [],
+				},
+			],
+			responses: {
+				200: {
+					description: 'User successfully logged out',
 					content: {
 						'application/json': {
 							schema: {
@@ -358,11 +377,7 @@ const userPaths = {
 									},
 									message: {
 										type: 'string',
-										example: 'Token refreshed',
-									},
-									token: {
-										type: 'boolean',
-										example: true,
+										example: 'Logged out successfully',
 									},
 								},
 							},
@@ -371,10 +386,16 @@ const userPaths = {
 				},
 				...errorHandler(
 					400,
-					'Invalid Refresh Token',
-					'No refresh token provided'
+					'Invalid input',
+					'Please provide email and password'
 				),
-				...errorHandler(500, 'Some server error', 'Server error'),
+				...errorHandler(
+					401,
+					'Unauthorized access',
+					'Invalid credentials'
+				),
+				...errorHandler(404, 'Not Found', 'User not found'),
+				...errorHandler(500, 'Some server error', 'Server Error'),
 			},
 		},
 	},
@@ -504,6 +525,144 @@ const userPaths = {
 					},
 				},
 				...errorHandler(400, 'Invalid input', 'Invalid email'),
+				...errorHandler(500, 'Some server error', 'Server error'),
+			},
+		},
+	},
+	'/api/user/verify/{id}': {
+		parameters: [
+			{
+				in: 'path',
+				name: 'id',
+				required: true,
+				schema: {
+					type: 'string',
+				},
+				description: 'The user ID',
+			},
+		],
+		get: {
+			tags: ['Users'],
+			summary: 'Verify user email',
+			description: 'Verify user email with user id',
+			responses: {
+				200: {
+					description: 'User verified',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+										example: true,
+									},
+									message: {
+										type: 'string',
+										example: 'Email verified successfully',
+									},
+								},
+							},
+						},
+					},
+				},
+				...errorHandler(400, 'Invalid input', 'Invalid id'),
+				...errorHandler(500, 'Some server error', 'Server error'),
+			},
+		},
+	},
+	'/api/user/follow/{id}': {
+		parameters: [
+			{
+				in: 'path',
+				name: 'id',
+				required: true,
+				schema: {
+					type: 'string',
+				},
+				description: 'The user ID',
+			},
+		],
+		get: {
+			tags: ['Users'],
+			summary: 'Follow user',
+			description: 'Follow user with user id',
+			security: [
+				{
+					jwtAuth: [],
+				},
+			],
+			responses: {
+				200: {
+					description: 'User followed',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+										example: true,
+									},
+									message: {
+										type: 'string',
+										example: 'User followed successfully',
+									},
+								},
+							},
+						},
+					},
+				},
+				...errorHandler(400, 'Invalid input', 'Invalid id'),
+				...errorHandler(401, 'Unauthorized', 'Invalid credentials'),
+				...errorHandler(500, 'Some server error', 'Server error'),
+			},
+		},
+	},
+	'/api/user/unfollow/{id}': {
+		parameters: [
+			{
+				in: 'path',
+				name: 'id',
+				required: true,
+				schema: {
+					type: 'string',
+				},
+				description: 'The user ID',
+			},
+		],
+		get: {
+			tags: ['Users'],
+			summary: 'Unfollow user',
+			description: 'Unfollow user with user id',
+			security: [
+				{
+					jwtAuth: [],
+				},
+			],
+			responses: {
+				200: {
+					description: 'User unfollowed',
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									success: {
+										type: 'boolean',
+										example: true,
+									},
+									message: {
+										type: 'string',
+										example: 'User unfollowed successfully',
+									},
+								},
+							},
+						},
+					},
+				},
+				...errorHandler(400, 'Invalid input', 'Invalid id'),
+				...errorHandler(401, 'Unauthorized', 'Invalid credentials'),
 				...errorHandler(500, 'Some server error', 'Server error'),
 			},
 		},

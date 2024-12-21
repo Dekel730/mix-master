@@ -35,7 +35,7 @@ const components = {
 			in: 'header',
 			name: 'Authorization',
 			description:
-				'Enter your JWT token directly in the `Authorization` header (without a `Bearer` prefix).',
+				'Enter your JWT token directly in the `Authorization` header (with a `Bearer` prefix).',
 		},
 	},
 	schemas: {
