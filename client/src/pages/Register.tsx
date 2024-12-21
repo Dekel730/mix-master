@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Loader from '../components/Loader';
 import { post } from '../utils/requests';
 import { toast } from 'react-toastify';
@@ -9,7 +9,9 @@ import {
 	FaEnvelope,
 	FaEye,
 	FaEyeSlash,
+	FaFileUpload,
 	FaLock,
+	FaTimes,
 	FaUser,
 } from 'react-icons/fa';
 import GoogleLogin from '../components/GoogleLogin';
@@ -28,6 +30,9 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const [fileName, setFileName] = useState('');
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const schema = z
 		.object({
@@ -56,6 +61,26 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 		resolver: zodResolver(schema),
 	});
 
+	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) {
+			setSelectedFile(file);
+			setFileName(file.name);
+		}
+	};
+
+	const resetFileInput = () => {
+		if (fileInputRef.current) {
+			fileInputRef.current.value = '';
+		}
+		setSelectedFile(null);
+		setFileName('');
+	};
+
+	const handleFileButtonClick = () => {
+		fileInputRef.current?.click();
+	};
+
 	const togglePasswordVisibility = () => {
 		setShowPassword((prev) => !prev);
 	};
@@ -69,26 +94,31 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 		localStorage.setItem('accessToken', data.accessToken);
 		localStorage.setItem('refreshToken', data.refreshToken);
 		setIsAuthenticated(true);
-		toast.success('Logged in successfully');
-		navigate('/');
 	};
 
 	const handleRegister = async (data: FieldValues) => {
 		setIsLoading(true);
+		const formData = new FormData();
+		formData.append('email', data.email);
+		formData.append('f_name', data.f_name);
+		formData.append('l_name', data.l_name);
+		formData.append('password', data.password);
+		if (selectedFile) {
+			formData.append('picture', selectedFile);
+		}
 		await post(
 			'/user/register',
-			{
-				email: data.email,
-				f_name: data.f_name,
-				l_name: data.l_name,
-				password: data.password,
-			},
+			formData,
 			(message: string) => {
 				toast.error(message);
 			},
 			() => {
+				console.log('User registered');
 				toast.info('Please verify your email address');
 				navigate('/login');
+			},
+			{
+				'Content-Type': 'multipart/form-data',
 			}
 		);
 		setIsLoading(false);
@@ -301,7 +331,6 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 													'one uppercase letter',
 													'one lowercase letter',
 													'one number',
-													'and one special character',
 												].map((requirement, index) => (
 													<li
 														key={index}
@@ -372,6 +401,40 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 												errors['confirm-password']
 													.message}
 										</span>
+									</div>
+									<div className="space-y-2">
+										<label
+											htmlFor="file-upload"
+											className="text-sm text-gray-400"
+										>
+											Profile Picture
+										</label>
+										<div className="relative flex">
+											<input
+												ref={fileInputRef}
+												id="file-upload"
+												type="file"
+												accept="image/*"
+												onChange={handleFileChange}
+												className="hidden"
+											/>
+											<button
+												type="button"
+												onClick={handleFileButtonClick}
+												className="flex-grow bg-[#1a1a1a] text-white h-12 rounded-l-xl pl-10 pr-12 outline-none transition-all text-left overflow-hidden"
+											>
+												{fileName || 'Choose a file'}
+											</button>
+											<button
+												type="button"
+												onClick={resetFileInput}
+												className="bg-[#2a2a2a] absolute right-0 top-0 text-white h-12 w-12 flex items-center justify-center hover:bg-[#333333] transition-colors"
+												aria-label="Reset file selection"
+											>
+												<FaTimes />
+											</button>
+											<FaFileUpload className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+										</div>
 									</div>
 								</div>
 

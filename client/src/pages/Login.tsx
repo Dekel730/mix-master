@@ -3,7 +3,7 @@ import Loader from '../components/Loader';
 import { post } from '../utils/requests';
 import { toast } from 'react-toastify';
 import { FieldValues, useForm } from 'react-hook-form';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
 	FaCocktail,
 	FaEnvelope,
@@ -32,9 +32,6 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 		formState: { errors },
 	} = useForm({ resolver: zodResolver(schema) });
 
-	const navigate = useNavigate();
-	const [searchParams] = useSearchParams();
-
 	const togglePasswordVisibility = () => {
 		setShowPassword((prev) => !prev);
 	};
@@ -43,13 +40,8 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 		localStorage.setItem('user', JSON.stringify(data.user));
 		localStorage.setItem('accessToken', data.accessToken);
 		localStorage.setItem('refreshToken', data.refreshToken);
-		setIsAuthenticated(true);
 		toast.success('Logged in successfully');
-		navigate(
-			searchParams.get('redirect')
-				? `/${searchParams.get('redirect')}`
-				: '/'
-		);
+		setIsAuthenticated(true);
 	};
 
 	const handleLogin = async (data: FieldValues) => {
@@ -71,7 +63,6 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 	};
 
 	const loginWithGoogle = async (authResult: any) => {
-		console.log(authResult);
 		if (authResult['code']) {
 			setIsLoading(true);
 			await post(

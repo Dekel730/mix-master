@@ -14,7 +14,8 @@ function GoogleLogin(props: GoogleLoginProps) {
 
 	return (
 		<button
-		id='google'
+			id="google"
+			type="button"
 			onClick={googleLogin}
 			className="w-full bg-[#2a2a2a] hover:bg-[#333333] text-white h-12 rounded-xl font-medium transition-colors flex items-center justify-center space-x-2"
 		>
