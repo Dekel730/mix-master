@@ -1,3 +1,4 @@
+import { del } from './../../client/src/utils/requests';
 import asyncHandler from 'express-async-handler';
 import * as bcrypt from 'bcrypt';
 import jwt, { JwtPayload } from 'jsonwebtoken';
@@ -287,7 +288,8 @@ const getUser = asyncHandler(
 			throw new Error('User not found');
 		}
 		const self = (userReq._id as ObjectId).toString() === id;
-		const isFollowing = userReq.following.find((f) => f.toString() === id) !== undefined;
+		const isFollowing =
+			userReq.following.find((f) => f.toString() === id) !== undefined;
 
 		res.json({
 			success: true,
@@ -302,7 +304,24 @@ const getUser = asyncHandler(
 				followers: user.followers.length,
 				following: user.following.length,
 				self,
-				isFollowing
+				isFollowing,
+			},
+		});
+	}
+);
+
+const getUserSettings = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		res.json({
+			success: true,
+			user: {
+				f_name: user.f_name,
+				l_name: user.l_name,
+				email: user.email,
+				picture: user.picture,
+				bio: user.bio,
+				tokens: user.tokens,
 			},
 		});
 	}
@@ -319,7 +338,7 @@ const updateUser = asyncHandler(
 		}: {
 			f_name: string;
 			l_name: string;
-			deletePicture: boolean | undefined;
+			deletePicture: string | undefined;
 			bio?: string;
 		} = req.body;
 		if (!f_name || !l_name) {
@@ -329,19 +348,22 @@ const updateUser = asyncHandler(
 			res.status(400);
 			throw new Error('First name and last name are required');
 		}
-		let picture: string | undefined = user.picture;
+		let picture: string | null = user.picture;
+		let deletePictureBool = deletePicture === 'true';
 		if (req.file) {
-			await deleteFile(user.picture);
+			if (user.picture) {
+				await deleteFile(user.picture);
+			}
 			picture = req.file.path;
 		}
-		if (deletePicture) {
+		if (deletePictureBool) {
 			if (req.file) {
 				await deleteFile(req.file.path);
 			}
 			if (user.picture) {
 				await deleteFile(user.picture);
 			}
-			picture = undefined;
+			picture = null;
 		}
 		const userUpdated = await User.findByIdAndUpdate(
 			user._id,
@@ -569,4 +591,5 @@ export {
 	unFollowUser,
 	getUserId,
 	logout,
+	getUserSettings,
 };

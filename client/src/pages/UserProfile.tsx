@@ -1,4 +1,4 @@
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import Loader from '../components/Loader';
@@ -8,6 +8,8 @@ import { getUserPicture } from '../utils/functions';
 import { IUserProfile, userProfileDefault } from '../types/user';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
 import CocktailList from '../components/CocktailList';
+import Spinner from '../components/Spinner';
+import { motion } from 'framer-motion';
 
 const UserProfile = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -16,12 +18,19 @@ const UserProfile = () => {
 	const [CocktailsData, setCocktailsData] = useState<any>({
 		cocktails: [],
 		count: 2,
-		pages: 1,
+		pages: 30,
 	});
+
+	const hasRunUser = useRef<boolean>(false);
+	const hasRunCocktails = useRef<number>(0);
 
 	const { id } = useParams<{ id: string }>();
 
 	const getUser = async () => {
+		if (import.meta.env.VITE_ENV === 'development') {
+			if (hasRunUser.current) return;
+			hasRunUser.current = true;
+		}
 		setIsLoading(true);
 		await authGet(
 			`/user/${id}`,
@@ -39,6 +48,12 @@ const UserProfile = () => {
 	};
 
 	const getCocktails = async (page?: number, loading?: boolean) => {
+		if (import.meta.env.VITE_ENV === 'development') {
+			hasRunCocktails.current++;
+			if (hasRunCocktails.current === 2) {
+				return;
+			}
+		}
 		page = page || 1;
 		if (loading) {
 			setIsLoading(true);
@@ -112,21 +127,18 @@ const UserProfile = () => {
 									{user.f_name} {user.l_name}
 								</h1>
 							</div>
-							{user.self && (
-								<button className="bg-[#D93025] hover:bg-[#B71C1C] text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out">
-									Edit Profile
-								</button>
-							)}
 						</div>
 
 						<div className="py-6">
 							<div className="grid md:grid-cols-3 gap-8">
 								{/* Profile Info */}
 								<div className="md:col-span-1">
-									<img
+									<motion.img
 										src={getUserPicture(user.picture)}
+										animate={{ scale: [0, 1] }}
+										transition={{ delay: 0.5 }}
 										alt="Profile picture"
-										className="rounded-lg w-full object-cover mb-4"
+										className="rounded-full w-80 h-80 object-cover mb-6 mx-auto"
 									/>
 									<div className="grid grid-cols-3 gap-4 text-center mb-4">
 										<div>
@@ -166,7 +178,7 @@ const UserProfile = () => {
                       items-center justify-center space-x-2 bg-[#D93025] hover:bg-[#B71C1C] 
                       text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out mb-4"
 										>
-											{following && <Loader />}
+											{following && <Spinner />}
 											{!following &&
 												(user.isFollowing ? (
 													<Fragment>

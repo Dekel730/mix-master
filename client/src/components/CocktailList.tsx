@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import CocktailDisplay from './CocktailDisplay';
+import { motion } from 'framer-motion';
+import Spinner from './Spinner';
 
 interface CocktailListProps {
 	cocktails: any;
@@ -25,6 +27,7 @@ const CocktailList = ({ cocktails, fetchMore, pages }: CocktailListProps) => {
 			window.innerHeight + document.documentElement.scrollTop >=
 			document.documentElement.offsetHeight - 100
 		) {
+			if (isLoading) return;
 			if (page < pages) {
 				setPage((prevPage) => prevPage + 1);
 			}
@@ -37,14 +40,23 @@ const CocktailList = ({ cocktails, fetchMore, pages }: CocktailListProps) => {
 	}, []);
 
 	return (
-		<div className="md:col-span-2">
+		<motion.div
+			initial={{ y: '100vw', opacity: 0 }}
+			animate={{ y: 0, opacity: 1 }}
+			transition={{
+				type: 'spring',
+				stiffness: 50,
+				damping: 20,
+			}}
+			className="md:col-span-2"
+		>
 			{cocktails.map((cocktail: any) => (
 				<div key={cocktail._id} className="space-y-4">
 					<CocktailDisplay cocktail={cocktail} />
 				</div>
 			))}
-			{isLoading && <p>Loading...</p>}
-		</div>
+			{isLoading && <Spinner />}
+		</motion.div>
 	);
 };
 

@@ -13,6 +13,7 @@ import {
 	unFollowUser,
 	verifyEmail,
 	logout,
+	getUserSettings,
 } from '../controllers/userController';
 import upload from '../config/storage';
 
@@ -23,6 +24,7 @@ router.post('/register', upload.single('picture'), register);
 router.post('/refresh', refresh);
 router.route('/logout').post(logout);
 router.delete('/', authUser, deleteUser);
+router.get('/', authUser, getUserSettings);
 router.get('/:id', authUser, getUser);
 router.put('/', authUser, upload.single('picture'), updateUser);
 router.post('/google', googleLogin);
