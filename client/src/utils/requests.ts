@@ -88,23 +88,35 @@ export const del = async (
 
 const getAccessToken = async (): Promise<string | null> => {
 	const accessToken: string | null = localStorage.getItem('accessToken');
-	if (accessToken) {
+	const expiresAt: string | null = localStorage.getItem('expiresAt');
+	if (accessToken && expiresAt && new Date(expiresAt) > new Date()) {
 		return accessToken;
 	}
-	const refreshToken = localStorage.getItem('refreshToken');
+	const refreshToken: string | null = localStorage.getItem('refreshToken');
 	if (!refreshToken) {
 		return null;
 	}
 
 	try {
-		const response = await api.post('/user/refresh', {
-			refreshToken,
-		});
+		const response = await api.post(
+			'/user/refresh',
+			{},
+			{
+				headers: {
+					Authorization: `Bearer ${refreshToken}`,
+				},
+			}
+		);
 		if (response.status !== 200) {
 			return null;
 		}
 		localStorage.setItem('accessToken', response.data.accessToken);
 		localStorage.setItem('refreshToken', response.data.refreshToken);
+		const expiresIn = 50 * 60 * 1000;
+		localStorage.setItem(
+			'expiresAt',
+			new Date(Date.now() + expiresIn).toISOString()
+		);
 		return response.data.accessToken;
 	} catch (error: any) {
 		console.error(error);

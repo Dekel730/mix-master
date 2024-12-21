@@ -93,6 +93,11 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 		localStorage.setItem('user', JSON.stringify(data.user));
 		localStorage.setItem('accessToken', data.accessToken);
 		localStorage.setItem('refreshToken', data.refreshToken);
+		const expiresIn = 50 * 60 * 1000;
+		localStorage.setItem(
+			'expiresAt',
+			new Date(Date.now() + expiresIn).toISOString()
+		);
 		setIsAuthenticated(true);
 	};
 
