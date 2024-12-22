@@ -10,12 +10,15 @@ import z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '../components/inputs/Input';
 import PasswordInput from '../components/inputs/PasswordInput';
+import { getDeviceDetails } from '../utils/functions';
 
 interface IProps {
 	setIsAuthenticated: (isAuthenticated: boolean) => void;
 }
 const Login = ({ setIsAuthenticated }: IProps) => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+
+	const device = getDeviceDetails();
 
 	const schema = z.object({
 		email: z.string().email('Invalid email address'),
@@ -47,6 +50,7 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 			{
 				email: data.email,
 				password: data.password,
+				device,
 			},
 			(message: string) => {
 				toast.error(message);
@@ -65,6 +69,7 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 				`/user/google`,
 				{
 					code: authResult.code,
+					device,
 				},
 				(message: string) => {
 					toast.error(message);

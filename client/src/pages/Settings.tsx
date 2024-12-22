@@ -6,7 +6,7 @@ import PasswordChange from '../components/PasswordChange';
 import Loader from '../components/Loader';
 import { authGet } from '../utils/requests';
 import { toast } from 'react-toastify';
-import { IUserSettings, userSettingsDefault } from '../types/user';
+import { Device, IUserSettings, userSettingsDefault } from '../types/user';
 
 const tabs = [
 	{
@@ -35,38 +35,41 @@ const Settings: React.FC = () => {
 	const TabContent =
 		tabs.find((tab) => tab.id === activeTab)?.component || PersonalDetails;
 
-    const hasRunUser = useRef<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [user, setUser] = useState<IUserSettings>(userSettingsDefault);
+	const hasRunUser = useRef<boolean>(false);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [user, setUser] = useState<IUserSettings>(userSettingsDefault);
 
-    const getUser = async () => {
-        if (import.meta.env.VITE_ENV === 'development') {
-            if (hasRunUser.current) return;
-            hasRunUser.current = true;
-        }
-        setIsLoading(true);
-        await authGet(
-            `/user/`,
-            (message: string) => {
-                toast.error(message);
-            },
-            (data: any) => {
-                setUser({
-                    ...data.user,
-                    createdAt: new Date(data.user.createdAt),
-                });
-            }
-        );
-        setIsLoading(false);
-    }
+	const getUser = async () => {
+		if (import.meta.env.VITE_ENV === 'development') {
+			if (hasRunUser.current) return;
+			hasRunUser.current = true;
+		}
+		setIsLoading(true);
+		await authGet(
+			`/user/`,
+			(message: string) => {
+				toast.error(message);
+			},
+			(data: any) => {
+				setUser({
+					...data.user,
+					devices: data.user.devices.map((device: Device) => ({
+						...device,
+						createdAt: new Date(device.createdAt),
+					})),
+				});
+			}
+		);
+		setIsLoading(false);
+	};
 
-    useEffect(() => {
-        getUser();
-    }, []);
+	useEffect(() => {
+		getUser();
+	}, []);
 
-    if (isLoading) {
-        return <Loader />;
-    }
+	if (isLoading) {
+		return <Loader />;
+	}
 
 	return (
 		<main>
@@ -114,7 +117,11 @@ const Settings: React.FC = () => {
 
 					{/* Content container */}
 					<div className="flex-1 bg-[#212121] p-4 rounded-lg">
-						<TabContent user={user} setUser={setUser}/>
+						<TabContent
+							user={user}
+							setUser={setUser}
+							devices={user.devices}
+						/>
 					</div>
 				</div>
 			</div>

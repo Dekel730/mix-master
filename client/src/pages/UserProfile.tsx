@@ -10,6 +10,7 @@ import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
 import CocktailList from '../components/CocktailList';
 import Spinner from '../components/Spinner';
 import { motion } from 'framer-motion';
+import { deleteAuthLocalStorage } from '../utils/functions';
 
 const UserProfile = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -111,11 +112,7 @@ const UserProfile = () => {
 		const accessToken = await getAccessToken();
 		if (!accessToken) {
 			toast.error('Please login to continue');
-			localStorage.removeItem('accessToken');
-			localStorage.removeItem('refreshToken');
-			localStorage.removeItem('expiresAt');
-			localStorage.removeItem('user');
-			localStorage.removeItem('isAuthenticated');
+			deleteAuthLocalStorage();
 			return;
 		}
 		const promises = [getUser(), getCocktails()];

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { FieldValues, useForm } from 'react-hook-form';
-import { FaBook } from 'react-icons/fa';
+import { FaBook, FaUser } from 'react-icons/fa';
 import z from 'zod';
 import { IUserSettings } from '../types/user';
 import Spinner from './Spinner';
@@ -60,7 +60,7 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 					email: data.user.email,
 					picture: data.user.picture,
 					bio: data.user.bio,
-					tokens: data.user.tokens,
+					devices: data.user.devices,
 				});
 				toast.success('Profile updated successfully');
 			},
@@ -83,6 +83,7 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						defaultValue={user.f_name}
 						errors={errors}
 						placeholder="Enter your first name"
+						StartIcon={FaUser}
 					/>
 					<Input
 						label="Last Name"
@@ -91,6 +92,7 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						register={register}
 						errors={errors}
 						placeholder="Enter your last name"
+						StartIcon={FaUser}
 					/>
 
 					<TextArea

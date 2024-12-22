@@ -1,5 +1,21 @@
 import * as mongoose from 'mongoose';
 
+
+
+export interface Device {
+	id: string;
+	name: string;
+	type: string;
+}
+
+export interface IToken {
+	token: string;
+	device_id: string;
+	createdAt: Date;
+	name: string;
+	type: string;
+}
+
 export interface IUser {
 	f_name: string;
 	l_name: string;
@@ -12,7 +28,7 @@ export interface IUser {
 	followers: mongoose.Schema.Types.ObjectId[];
 	following: mongoose.Schema.Types.ObjectId[];
 	createdAt?: Date;
-	tokens: string[];
+	tokens: IToken[];
 }
 
 const UserScheme = new mongoose.Schema<IUser>(
@@ -59,11 +75,27 @@ const UserScheme = new mongoose.Schema<IUser>(
 				ref: 'User',
 			},
 		],
-		tokens: {
-			type: [String],
-			required: true,
-			default: [],
-		},
+		tokens: [
+			{
+				token: {
+					type: String,
+					required: true,
+				},
+				device_id: {
+					type: String,
+				},
+				createdAt: {
+					type: Date,
+					required: true,
+				},
+				name: {
+					type: String,
+				},
+				type: {
+					type: String,
+				},
+			},
+		],
 	},
 	{ timestamps: true }
 );

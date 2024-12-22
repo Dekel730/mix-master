@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import * as bcrypt from 'bcrypt';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import User, { UserDocument } from '../models/userModel';
+import User, { Device, UserDocument } from '../models/userModel';
 import { email_regex, password_regex } from '../utils/regex';
 import { deleteFile, sendEmail } from '../utils/functions';
 import {
@@ -16,7 +16,11 @@ import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
 import Post from '../models/postModel';
 
-const createUserLogin = async (res: Response, user: UserDocument) => {
+const createUserLogin = async (
+	res: Response,
+	user: UserDocument,
+	device: Device
+) => {
 	const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
 		expiresIn: '1h',
 	});
@@ -24,7 +28,22 @@ const createUserLogin = async (res: Response, user: UserDocument) => {
 		{ id: user._id },
 		process.env.JWT_SECRET_REFRESH!
 	);
-	user.tokens.push(refreshToken);
+	const token = user.tokens.find((t) => t.device_id === device.id);
+	if (token) {
+		const index = user.tokens.findIndex((t) => t.device_id === device.id);
+		user.tokens[index] = {
+			...token,
+			token: refreshToken,
+		};
+	} else {
+		user.tokens.push({
+			token: refreshToken,
+			device_id: device.id,
+			createdAt: new Date(),
+			name: device.name,
+			type: device.type,
+		});
+	}
 	await user.save();
 	const userEx: UserDocument[] = await User.aggregate([
 		{
@@ -60,7 +79,15 @@ const createUserLogin = async (res: Response, user: UserDocument) => {
 
 const login = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-		const { email, password } = req.body;
+		const {
+			email,
+			password,
+			device,
+		}: {
+			email: string;
+			password: string;
+			device: Device;
+		} = req.body;
 		if (!email || !password) {
 			res.status(400);
 			throw new Error('All fields are required');
@@ -85,7 +112,7 @@ const login = asyncHandler(
 			res.status(400);
 			throw new Error('Invalid email or password');
 		}
-		createUserLogin(res, user);
+		createUserLogin(res, user, device);
 	}
 );
 
@@ -321,7 +348,12 @@ const getUserSettings = asyncHandler(
 				email: user.email,
 				picture: user.picture,
 				bio: user.bio,
-				tokens: user.tokens,
+				devices: user.tokens.map((t) => ({
+					device_id: t.device_id,
+					createdAt: t.createdAt,
+					name: t.name,
+					type: t.type,
+				})),
 			},
 		});
 	}
@@ -422,12 +454,13 @@ const refresh = asyncHandler(async (req, res) => {
 		res.status(404);
 		throw new Error('User not found');
 	}
-	if (!user.tokens.includes(refreshToken)) {
+	if (!user.tokens.find((t) => t.token === refreshToken)) {
 		user.tokens = [];
 		await user.save();
 		res.status(401);
 		throw new Error('Invalid refresh token');
 	}
+	const device = user.tokens.find((t) => t.token === refreshToken)!;
 	const accessToken: string = jwt.sign(
 		{ id: decoded.id },
 		process.env.JWT_SECRET!,
@@ -439,7 +472,9 @@ const refresh = asyncHandler(async (req, res) => {
 		process.env.JWT_SECRET_REFRESH!
 	);
 
-	user.tokens[user.tokens.indexOf(refreshToken)] = newRefreshToken;
+	const index = user.tokens.findIndex((t) => t.token === refreshToken);
+
+	user.tokens[index] = { ...device, token: newRefreshToken };
 	await user.save();
 
 	res.json({
@@ -472,13 +507,13 @@ const logout = asyncHandler(
 			res.status(404);
 			throw new Error('User not found');
 		}
-		if (!user.tokens.includes(refreshToken)) {
+		if (!user.tokens.find((t) => t.token === refreshToken)) {
 			user.tokens = [];
 			await user.save();
 			res.status(401);
 			throw new Error('Invalid token');
 		}
-		user.tokens = user.tokens.filter((t) => t !== refreshToken);
+		user.tokens = user.tokens.filter((t) => t.token !== refreshToken);
 		await user.save();
 		res.json({
 			success: true,
@@ -524,7 +559,13 @@ const googleLogin = asyncHandler(
 			process.env.GOOGLE_CLIENT_SECRET,
 			'postmessage'
 		);
-		const { code } = req.body;
+		const {
+			code,
+			device,
+		}: {
+			code: string;
+			device: Device;
+		} = req.body;
 		if (!code) {
 			res.status(400);
 			throw new Error('No code provided');
@@ -540,8 +581,6 @@ const googleLogin = asyncHandler(
 			res.status(400);
 			throw new Error('Invalid code');
 		}
-
-		console.log(payload);
 
 		const email = payload.email;
 		if (!email) {
@@ -563,14 +602,44 @@ const googleLogin = asyncHandler(
 				isVerified: true,
 			});
 			await newUser.save();
-			createUserLogin(res, newUser);
+			createUserLogin(res, newUser, device);
 		} else {
 			if (!user.isVerified) {
 				user.isVerified = true;
 				await user.save();
 			}
-			createUserLogin(res, user);
+			createUserLogin(res, user, device);
 		}
+	}
+);
+
+const disconnectDevice = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		const { id } = req.params;
+		const device = user.tokens.find((t) => t.device_id === id);
+		if (!device) {
+			res.status(400);
+			throw new Error('Device not found');
+		}
+		user.tokens = user.tokens.filter((t) => t.device_id !== id);
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Device disconnected successfully',
+		});
+	}
+);
+
+const disconnectAllDevices = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		user.tokens = [];
+		await user.save();
+		res.json({
+			success: true,
+			message: 'All devices disconnected successfully',
+		});
 	}
 );
 
@@ -599,4 +668,6 @@ export {
 	getUserId,
 	logout,
 	getUserSettings,
+	disconnectDevice,
+	disconnectAllDevices,
 };
