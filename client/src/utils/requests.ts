@@ -86,7 +86,7 @@ export const del = async (
 	}
 };
 
-const getAccessToken = async (): Promise<string | null> => {
+export const getAccessToken = async (): Promise<string | null> => {
 	const accessToken: string | null = localStorage.getItem('accessToken');
 	const expiresAt: string | null = localStorage.getItem('expiresAt');
 	if (accessToken && expiresAt && new Date(expiresAt) > new Date()) {

@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import Loader from '../components/Loader';
-import { authGet } from '../utils/requests';
+import { authGet, getAccessToken } from '../utils/requests';
 import { toast } from 'react-toastify';
 import { getUserPicture } from '../utils/functions';
 import { IUserProfile, userProfileDefault } from '../types/user';
@@ -31,7 +31,6 @@ const UserProfile = () => {
 			if (hasRunUser.current) return;
 			hasRunUser.current = true;
 		}
-		setIsLoading(true);
 		await authGet(
 			`/user/${id}`,
 			(message: string) => {
@@ -44,7 +43,6 @@ const UserProfile = () => {
 				});
 			}
 		);
-		setIsLoading(false);
 	};
 
 	const getCocktails = async (page?: number, loading?: boolean) => {
@@ -108,8 +106,25 @@ const UserProfile = () => {
 		setFollowing(false);
 	};
 
+	const getData = async () => {
+		setIsLoading(true);
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			toast.error('Please login to continue');
+			localStorage.removeItem('accessToken');
+			localStorage.removeItem('refreshToken');
+			localStorage.removeItem('expiresAt');
+			localStorage.removeItem('user');
+			localStorage.removeItem('isAuthenticated');
+			return;
+		}
+		const promises = [getUser(), getCocktails()];
+		await Promise.all(promises);
+		setIsLoading(false);
+	};
+
 	useEffect(() => {
-		getUser();
+		getData();
 	}, []);
 
 	if (isLoading) {

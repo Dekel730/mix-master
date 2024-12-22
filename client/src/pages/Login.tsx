@@ -4,23 +4,18 @@ import { post } from '../utils/requests';
 import { toast } from 'react-toastify';
 import { FieldValues, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
-import {
-	FaCocktail,
-	FaEnvelope,
-	FaEye,
-	FaEyeSlash,
-	FaLock,
-} from 'react-icons/fa';
+import { FaCocktail, FaEnvelope } from 'react-icons/fa';
 import GoogleLogin from '../components/GoogleLogin';
 import z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import Input from '../components/inputs/Input';
+import PasswordInput from '../components/inputs/PasswordInput';
 
 interface IProps {
 	setIsAuthenticated: (isAuthenticated: boolean) => void;
 }
 const Login = ({ setIsAuthenticated }: IProps) => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
-	const [showPassword, setShowPassword] = useState(false);
 
 	const schema = z.object({
 		email: z.string().email('Invalid email address'),
@@ -31,10 +26,6 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 		handleSubmit,
 		formState: { errors },
 	} = useForm({ resolver: zodResolver(schema) });
-
-	const togglePasswordVisibility = () => {
-		setShowPassword((prev) => !prev);
-	};
 
 	const successfulLogin = (data: any) => {
 		localStorage.setItem('user', JSON.stringify(data.user));
@@ -119,89 +110,23 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 								</p>
 
 								<div className="space-y-4">
-									<div className="space-y-2">
-										<label
-											htmlFor="email"
-											className="text-sm text-gray-400"
-										>
-											Email
-										</label>
-										<div className="relative">
-											<input
-												{...register('email')}
-												id="email"
-												type="email"
-												placeholder="Enter your email address"
-												className={`w-full bg-[#1a1a1a] text-white h-12 rounded-xl pl-10 pr-4 outline-none focus:ring-2 focus:${
-													errors.email
-														? 'ring-red-500'
-														: 'ring-gray-500'
-												} transition-all ${
-													errors.email
-														? 'ring-2 ring-red-500'
-														: ''
-												}`}
-											/>
-											<FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-										</div>
-										<span className="text-red-500 text-sm">
-											{errors.email &&
-												typeof errors.email.message ===
-													'string' &&
-												errors.email.message}
-										</span>
-									</div>
+									<Input
+										field="email"
+										StartIcon={FaEnvelope}
+										inputType="email"
+										label="Email"
+										placeholder="Enter your email address"
+										register={register}
+										errors={errors}
+									/>
 
-									<div className="space-y-2">
-										<label
-											htmlFor="password"
-											className="text-sm text-gray-400"
-										>
-											Password
-										</label>
-										<div className="relative">
-											<input
-												{...register('password')}
-												id="password"
-												type={
-													showPassword
-														? 'text'
-														: 'password'
-												}
-												placeholder="Enter your password"
-												className={`w-full bg-[#1a1a1a] text-white h-12 rounded-xl pl-10 pr-16 outline-none focus:ring-2 focus:${
-													errors.password
-														? 'ring-red-500'
-														: 'ring-gray-500'
-												} transition-all ${
-													errors.password
-														? 'ring-2 ring-red-500'
-														: ''
-												}`}
-											/>
-											<FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-											<button
-												type="button"
-												id="password-toggle"
-												onClick={
-													togglePasswordVisibility
-												}
-												className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-											>
-												{showPassword ? (
-													<FaEyeSlash />
-												) : (
-													<FaEye />
-												)}
-											</button>
-										</div>
-										<span className="text-red-500 text-sm">
-											{errors.password &&
-												typeof errors.password
-													.message === 'string' &&
-												errors.password.message}
-										</span>
-									</div>
+									<PasswordInput
+										register={register}
+										errors={errors}
+										field="password"
+										placeholder="Enter your password"
+										label={'Password'}
+									/>
 								</div>
 
 								<button

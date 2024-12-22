@@ -348,6 +348,13 @@ const updateUser = asyncHandler(
 			res.status(400);
 			throw new Error('First name and last name are required');
 		}
+		if (bio && bio.length > 250) {
+			if (req.file) {
+				await deleteFile(req.file.path);
+			}
+			res.status(400);
+			throw new Error('Bio must be less than 250 characters');
+		}
 		let picture: string | null = user.picture;
 		let deletePictureBool = deletePicture === 'true';
 		if (req.file) {

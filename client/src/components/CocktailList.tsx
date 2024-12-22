@@ -19,6 +19,7 @@ const CocktailList = ({ cocktails, fetchMore, pages }: CocktailListProps) => {
 	};
 
 	useEffect(() => {
+		if (page === 1) return;
 		getCocktails(page);
 	}, [page]);
 
