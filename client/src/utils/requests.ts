@@ -7,11 +7,14 @@ const api = axios.create({
 export const get = async (
 	url: string,
 	onFail: (message: string) => void,
-	onSuccess: (data: any) => void
+	onSuccess: (data: any) => void,
+	headers?: any
 ) => {
 	try {
-		const response = await api.get(url);
-		if (response.status === 200) {
+		const response = await api.get(url, {
+			headers,
+		});
+		if (response.data.success) {
 			onSuccess(response.data);
 		}
 	} catch (error: any) {
@@ -25,11 +28,14 @@ export const post = async (
 	url: string,
 	data: any,
 	onFail: (message: string) => void,
-	onSuccess: (data: any) => void
+	onSuccess: (data: any) => void,
+	headers?: any
 ) => {
 	try {
-		const response = await api.post(url, data);
-		if (response.status === 200) {
+		const response = await api.post(url, data, {
+			headers,
+		});
+		if (response.data.success) {
 			onSuccess(response.data);
 		}
 	} catch (error: any) {
@@ -43,11 +49,14 @@ export const put = async (
 	url: string,
 	data: any,
 	onFail: (message: string) => void,
-	onSuccess: (data: any) => void
+	onSuccess: (data: any) => void,
+	headers?: any
 ) => {
 	try {
-		const response = await api.put(url, data);
-		if (response.status === 200) {
+		const response = await api.put(url, data, {
+			headers,
+		});
+		if (response.data.success) {
 			onSuccess(response.data);
 		}
 	} catch (error: any) {
@@ -60,11 +69,14 @@ export const put = async (
 export const del = async (
 	url: string,
 	onFail: (message: string) => void,
-	onSuccess: (data: any) => void
+	onSuccess: (data: any) => void,
+	headers?: any
 ) => {
 	try {
-		const response = await api.delete(url);
-		if (response.status === 200) {
+		const response = await api.delete(url, {
+			headers,
+		});
+		if (response.data.success) {
 			onSuccess(response.data);
 		}
 	} catch (error: any) {
@@ -76,23 +88,35 @@ export const del = async (
 
 const getAccessToken = async (): Promise<string | null> => {
 	const accessToken: string | null = localStorage.getItem('accessToken');
-	if (accessToken) {
+	const expiresAt: string | null = localStorage.getItem('expiresAt');
+	if (accessToken && expiresAt && new Date(expiresAt) > new Date()) {
 		return accessToken;
 	}
-	const refreshToken = localStorage.getItem('refreshToken');
+	const refreshToken: string | null = localStorage.getItem('refreshToken');
 	if (!refreshToken) {
 		return null;
 	}
 
 	try {
-		const response = await api.post('/user/refresh', {
-			refreshToken,
-		});
+		const response = await api.post(
+			'/user/refresh',
+			{},
+			{
+				headers: {
+					Authorization: `Bearer ${refreshToken}`,
+				},
+			}
+		);
 		if (response.status !== 200) {
 			return null;
 		}
 		localStorage.setItem('accessToken', response.data.accessToken);
 		localStorage.setItem('refreshToken', response.data.refreshToken);
+		const expiresIn = 50 * 60 * 1000;
+		localStorage.setItem(
+			'expiresAt',
+			new Date(Date.now() + expiresIn).toISOString()
+		);
 		return response.data.accessToken;
 	} catch (error: any) {
 		console.error(error);
@@ -103,7 +127,8 @@ const getAccessToken = async (): Promise<string | null> => {
 export const authGet = async (
 	url: string,
 	onFail: (message: string, auth?: boolean) => void,
-	onSuccess: (data: any) => void
+	onSuccess: (data: any) => void,
+	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
@@ -114,9 +139,10 @@ export const authGet = async (
 		const response = await api.get(url, {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
+				...headers,
 			},
 		});
-		if (response.status === 200) {
+		if (response.data.success) {
 			onSuccess(response.data);
 		}
 	} catch (error: any) {
@@ -130,7 +156,8 @@ export const authPost = async (
 	url: string,
 	data: any,
 	onFail: (message: string, auth?: boolean) => void,
-	onSuccess: (data: any) => void
+	onSuccess: (data: any) => void,
+	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
@@ -141,9 +168,10 @@ export const authPost = async (
 		const response = await api.post(url, data, {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
+				...headers,
 			},
 		});
-		if (response.status === 200) {
+		if (response.data.success) {
 			onSuccess(response.data);
 		}
 	} catch (error: any) {
@@ -157,7 +185,8 @@ export const authPut = async (
 	url: string,
 	data: any,
 	onFail: (message: string, auth?: boolean) => void,
-	onSuccess: (data: any) => void
+	onSuccess: (data: any) => void,
+	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
@@ -168,9 +197,10 @@ export const authPut = async (
 		const response = await api.put(url, data, {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
+				...headers,
 			},
 		});
-		if (response.status === 200) {
+		if (response.data.success) {
 			onSuccess(response.data);
 		}
 	} catch (error: any) {
@@ -183,7 +213,8 @@ export const authPut = async (
 export const authDel = async (
 	url: string,
 	onFail: (message: string, auth?: boolean) => void,
-	onSuccess: (data: any) => void
+	onSuccess: (data: any) => void,
+	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
@@ -194,9 +225,10 @@ export const authDel = async (
 		const response = await api.delete(url, {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
+				...headers,
 			},
 		});
-		if (response.status === 200) {
+		if (response.data.success) {
 			onSuccess(response.data);
 		}
 	} catch (error: any) {

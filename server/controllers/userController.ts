@@ -11,6 +11,50 @@ import {
 } from './commentController';
 import { deleteUserPosts } from './postController';
 import { ObjectId } from 'mongoose';
+import { OAuth2Client } from 'google-auth-library';
+import { v4 as uuid } from 'uuid';
+
+const createUserLogin = async (res: Response, user: UserDocument) => {
+	const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
+		expiresIn: '1h',
+	});
+	const refreshToken = jwt.sign(
+		{ id: user._id },
+		process.env.JWT_SECRET_REFRESH!
+	);
+	user.tokens.push(refreshToken);
+	await user.save();
+	const userEx: UserDocument[] = await User.aggregate([
+		{
+			$match: { _id: user._id },
+		},
+		{
+			$addFields: {
+				followers: { $size: '$followers' }, // Compute the length of 'followers' array
+				following: { $size: '$following' }, // Compute the length of 'following' array
+			},
+		},
+		{
+			$unset: ['password', '__v', 'resetPasswordToken'], // Exclude 'password' and '__v' fields
+			// Add other fields you want to exclude in the array
+		},
+	]);
+	res.json({
+		success: true,
+		user: {
+			_id: userEx[0]._id,
+			f_name: userEx[0].f_name,
+			l_name: userEx[0].l_name,
+			email: userEx[0].email,
+			picture: userEx[0].picture,
+			createdAt: userEx[0].createdAt,
+			followers: userEx[0].followers,
+			following: userEx[0].following,
+		},
+		accessToken,
+		refreshToken,
+	});
+};
 
 const login = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -39,49 +83,7 @@ const login = asyncHandler(
 			res.status(400);
 			throw new Error('Invalid email or password');
 		}
-		const accessToken = jwt.sign(
-			{ id: user._id },
-			process.env.JWT_SECRET!,
-			{
-				expiresIn: '1h',
-			}
-		);
-		const refreshToken = jwt.sign(
-			{ id: user._id },
-			process.env.JWT_SECRET_REFRESH!
-		);
-		user.tokens.push(refreshToken);
-		await user.save();
-		const userEx: UserDocument[] = await User.aggregate([
-			{
-				$match: { _id: user._id },
-			},
-			{
-				$addFields: {
-					followers: { $size: '$followers' }, // Compute the length of 'followers' array
-					following: { $size: '$following' }, // Compute the length of 'following' array
-				},
-			},
-			{
-				$unset: ['password', '__v', 'resetPasswordToken'], // Exclude 'password' and '__v' fields
-				// Add other fields you want to exclude in the array
-			},
-		]);
-		res.json({
-			success: true,
-			user: {
-				_id: userEx[0]._id,
-				f_name: userEx[0].f_name,
-				l_name: userEx[0].l_name,
-				email: userEx[0].email,
-				picture: userEx[0].picture,
-				createdAt: userEx[0].createdAt,
-				followers: userEx[0].followers,
-				following: userEx[0].following,
-			},
-			accessToken,
-			refreshToken,
-		});
+		createUserLogin(res, user);
 	}
 );
 
@@ -136,7 +138,7 @@ const register = asyncHandler(
 			sendEmail(
 				email,
 				'Verify your email',
-				`please verify your email: http://localhost:3000/verify/${user._id}`
+				`please verify your email: ${process.env.HOST_ADDRESS}/verify/${user._id}`
 			)
 		);
 		const [userSaved, sent] = await Promise.all(promises);
@@ -465,7 +467,60 @@ const resendEmail = asyncHandler(
 );
 
 const googleLogin = asyncHandler(
-	async (req: Request, res: Response): Promise<void> => {}
+	async (req: Request, res: Response): Promise<void> => {
+		const client = new OAuth2Client(
+			process.env.GOOGLE_CLIENT_ID,
+			process.env.GOOGLE_CLIENT_SECRET,
+			'postmessage'
+		);
+		const { code } = req.body;
+		if (!code) {
+			res.status(400);
+			throw new Error('No code provided');
+		}
+		const response = await client.getToken(code);
+		const ticket = await client.verifyIdToken({
+			idToken: response.tokens.id_token!,
+			audience: process.env.GOOGLE_CLIENT_ID!,
+		});
+
+		const payload = ticket.getPayload();
+		if (!payload) {
+			res.status(400);
+			throw new Error('Invalid code');
+		}
+
+		console.log(payload);
+
+		const email = payload.email;
+		if (!email) {
+			res.status(400);
+			throw new Error('Invalid email');
+		}
+		const user = await User.findOne({
+			email: { $regex: new RegExp(`^${email}$`, 'i') },
+		});
+		if (!user) {
+			// create user
+			const password = uuid();
+			const newUser = new User({
+				f_name: payload.given_name,
+				l_name: payload.family_name,
+				email,
+				password,
+				picture: payload.picture || undefined,
+				isVerified: true,
+			});
+			await newUser.save();
+			createUserLogin(res, newUser);
+		} else {
+			if (!user.isVerified) {
+				user.isVerified = true;
+				await user.save();
+			}
+			createUserLogin(res, user);
+		}
+	}
 );
 
 const getUserId = async (email: string): Promise<string> => {

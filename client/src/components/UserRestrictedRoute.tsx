@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 
 interface UserRestrictedRouteProps {
 	isAuthenticated: boolean;
@@ -9,8 +9,19 @@ const UserRestrictedRoute = ({
 	isAuthenticated,
 	children,
 }: UserRestrictedRouteProps) => {
+	const [searchParams] = useSearchParams();
+
 	if (isAuthenticated) {
-		return <Navigate to="/" replace />;
+		return (
+			<Navigate
+				to={
+					searchParams.get('redirect')
+						? `/${searchParams.get('redirect')}`
+						: '/'
+				}
+				replace
+			/>
+		);
 	}
 
 	return children;

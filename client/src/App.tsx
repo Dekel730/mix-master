@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -15,7 +15,13 @@ import UserRestrictedRoute from './components/UserRestrictedRoute';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 function App() {
-	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+		() => localStorage.getItem('isAuthenticated') === 'true'
+	);
+
+	useEffect(() => {
+		localStorage.setItem('isAuthenticated', String(isAuthenticated));
+	}, [isAuthenticated]);
 
 	return (
 		<>
@@ -43,7 +49,7 @@ function App() {
 								>
 									<Login
 										setIsAuthenticated={setIsAuthenticated}
-									/>{' '}
+									/>
 								</UserRestrictedRoute>
 							}
 						/>
@@ -53,7 +59,9 @@ function App() {
 								<UserRestrictedRoute
 									isAuthenticated={isAuthenticated}
 								>
-									<Register />
+									<Register
+										setIsAuthenticated={setIsAuthenticated}
+									/>
 								</UserRestrictedRoute>
 							}
 						/>

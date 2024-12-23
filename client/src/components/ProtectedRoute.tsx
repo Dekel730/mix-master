@@ -8,7 +8,12 @@ const ProtectedRoute = ({ isAuthenticated, children }: ProtectedRouteProps) => {
 	const path = window.location.pathname.slice(1);
 
 	if (!isAuthenticated) {
-		return <Navigate to={`/login?redirect=${path}`} replace />;
+		return (
+			<Navigate
+				to={path ? `/login?redirect=${path}` : '/login'}
+				replace
+			/>
+		);
 	}
 
 	return children;
