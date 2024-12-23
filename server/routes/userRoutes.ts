@@ -12,6 +12,7 @@ import {
 	followUser,
 	unFollowUser,
 	verifyEmail,
+	logout,
 } from '../controllers/userController';
 import upload from '../config/storage';
 
@@ -20,6 +21,7 @@ const router = express.Router();
 router.post('/login', login);
 router.post('/register', upload.single('picture'), register);
 router.post('/refresh', refresh);
+router.route('/logout').post(logout);
 router.delete('/', authUser, deleteUser);
 router.get('/', authUser, getUser);
 router.put('/', authUser, upload.single('picture'), updateUser);

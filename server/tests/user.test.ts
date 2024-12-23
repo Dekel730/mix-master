@@ -2,13 +2,15 @@ import request from 'supertest';
 import app from '../server';
 import { beforeAll, describe, expect, it } from '@jest/globals';
 import { getUserId } from '../controllers/userController';
+import jwt from 'jsonwebtoken';
 
 process.env.NODE_ENV = 'test';
 
 var userId: string,
 	accessToken2: string,
 	refreshToken: string,
-	newUserId: string;
+	newUserId: string,
+	invalidUserToken: string;
 
 const user = {
 	f_name: 'John',
@@ -25,6 +27,11 @@ beforeAll(async () => {
 		password: process.env.TEST_PASSWORD_USER_1,
 	});
 	userId = res.body.user._id;
+	const randomMongoId = '60b0e6f4c9f8c72b1c1b3e7b';
+	invalidUserToken = jwt.sign(
+		{ id: randomMongoId },
+		process.env.JWT_SECRET_REFRESH!
+	);
 });
 
 describe('User routes Test', () => {
@@ -143,63 +150,63 @@ describe('User routes Test', () => {
 			password: user.password,
 		});
 		expect(res.statusCode).toEqual(200);
-		accessToken2 = res.headers.authorization;
-		refreshToken = res.headers['set-cookie'][0];
+		accessToken2 = res.body.accessToken;
+		refreshToken = res.body.refreshToken;
 	});
 
 	it('should return 400 if user was trying to follow himself - follow user', async () => {
 		const res = await request(app)
 			.get(`/api/user/follow/${newUserId}`)
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(400);
 	});
 
 	it('should return 400 if user not found - follow user', async () => {
 		const res = await request(app)
 			.get(`/api/user/follow/${noID}`)
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(400);
 	});
 
 	it('should return 200 if user followed another user - follow user', async () => {
 		const res = await request(app)
 			.get(`/api/user/follow/${userId}`)
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(200);
 	});
 
 	it('should return 400 if already following user - follow user', async () => {
 		const res = await request(app)
 			.get(`/api/user/follow/${userId}`)
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(400);
 	});
 
 	it('should return 400 if user was trying to unfollow himself - unfollow user', async () => {
 		const res = await request(app)
 			.get(`/api/user/unfollow/${newUserId}`)
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(400);
 	});
 
 	it('should return 400 if user not found - unfollow user', async () => {
 		const res = await request(app)
 			.get(`/api/user/unfollow/${noID}`)
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(400);
 	});
 
 	it('should return 200 if user unfollowed another user - unfollow user', async () => {
 		const res = await request(app)
 			.get(`/api/user/unfollow/${userId}`)
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(200);
 	});
 
 	it('should return 400 if not following user - unfollow user', async () => {
 		const res = await request(app)
 			.get(`/api/user/unfollow/${userId}`)
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(400);
 	});
 
@@ -216,14 +223,14 @@ describe('User routes Test', () => {
 	it('should return 200 if user received - get user', async () => {
 		const res = await request(app)
 			.get('/api/user')
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(200);
 	});
 
 	it('should return 400 if required fields empty  - update user', async () => {
 		const res = await request(app)
 			.put('/api/user')
-			.set('Authorization', accessToken2)
+			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', '')
 			.field('l_name', '')
 			.attach('picture', './tests/assets/test.jpeg');
@@ -233,7 +240,7 @@ describe('User routes Test', () => {
 	it('should return 200 if user updated  - update user', async () => {
 		const res = await request(app)
 			.put('/api/user')
-			.set('Authorization', accessToken2)
+			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', 'John')
 			.field('l_name', 'Smith')
 			.attach('picture', './tests/assets/test.jpeg');
@@ -244,7 +251,7 @@ describe('User routes Test', () => {
 	it('should return 200 if user updated  - update user', async () => {
 		const res = await request(app)
 			.put('/api/user')
-			.set('Authorization', accessToken2)
+			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', 'John')
 			.field('l_name', 'Smith')
 			.field('deletePicture', true)
@@ -253,27 +260,51 @@ describe('User routes Test', () => {
 		expect(res.body.user.l_name).toEqual('Smith');
 	});
 
-	it('should return 400 if no refresh token - refresh token', async () => {
-		const res = await request(app).post('/api/user/refresh');
+	it('should return 400 if no refresh token is provided', async () => {
+		const res = await request(app).post('/api/user/refresh').send();
+
 		expect(res.statusCode).toEqual(400);
+		expect(res.body.message).toBe('No refresh token provided.');
 	});
 
-	it('should return 400 if invalid refresh token - refresh token', async () => {
+	it('should return 400 if the refresh token is invalid', async () => {
+		const invalidRefreshToken = 'invalidtoken123';
+
 		const res = await request(app)
 			.post('/api/user/refresh')
-			.set(
-				'Cookie',
-				'refreshToken=invalidToken ; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'
-			);
-		expect(res.statusCode).toEqual(400);
+			.set('Authorization', `Bearer ${invalidRefreshToken}`)
+			.expect(400);
+
+		expect(res.body.message).toBe('Token failed');
 	});
 
-	it('should return 200 if user refreshed token - refresh token', async () => {
+	it('should return 404 if user not found', async () => {
 		const res = await request(app)
 			.post('/api/user/refresh')
-			.set('Cookie', refreshToken);
+			.set('Authorization', `Bearer ${invalidUserToken}`);
+
+		expect(res.statusCode).toEqual(404);
+	});
+
+	it('should return access token if valid refresh token is provided', async () => {
+		const res = await request(app)
+			.post('/api/user/refresh')
+			.set('Authorization', `Bearer ${refreshToken}`)
+			.send({});
+
 		expect(res.statusCode).toEqual(200);
-		expect(res.headers.authorization).toBeDefined();
+		expect(res.body.success).toBe(true);
+		expect(res.body).toHaveProperty('accessToken');
+		expect(res.body).toHaveProperty('refreshToken');
+	});
+
+	it('should return 401 if refresh token expired', async () => {
+		const res = await request(app)
+			.post('/api/user/refresh')
+			.set('Authorization', `Bearer ${refreshToken}`)
+			.send({});
+
+		expect(res.statusCode).toEqual(401);
 	});
 
 	it('should return 400 if invalid email - resend email', async () => {
@@ -297,10 +328,52 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(400);
 	});
 
+	it('should return 400 if no token provided - logout', async () => {
+		const res = await request(app).post('/api/user/logout').send({});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if no token provided - logout', async () => {
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('authorization', `Bearer ugwef2gou489gh23o4nfn28nif`)
+			.send({});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 404 if user not found - logout', async () => {
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('authorization', `Bearer ${invalidUserToken}`)
+			.send({});
+		expect(res.statusCode).toEqual(404);
+	});
+
+	it('should return 401 if refresh token expired - logout', async () => {
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('Authorization', `Bearer ${refreshToken}`)
+			.send({});
+		expect(res.statusCode).toEqual(401);
+	});
+
+	it('should return 200 if logged out - logout', async () => {
+		const res1 = await request(app).post('/api/user/login').send({
+			email: user.email,
+			password: user.password,
+		});
+		const newRefreshToken = res1.body.refreshToken;
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('Authorization', `Bearer ${newRefreshToken}`)
+			.send({});
+		expect(res.statusCode).toEqual(200);
+	});
+
 	it('should delete user - deleteUser', async () => {
 		const res = await request(app)
 			.delete('/api/user')
-			.set('Authorization', accessToken2);
+			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(200);
 	});
 });

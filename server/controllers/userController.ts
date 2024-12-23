@@ -48,14 +48,10 @@ const login = asyncHandler(
 		);
 		const refreshToken = jwt.sign(
 			{ id: user._id },
-			process.env.JWT_SECRET_REFRESH!,
-			{ expiresIn: '30d' }
+			process.env.JWT_SECRET_REFRESH!
 		);
-
-		res.cookie('refreshToken', refreshToken, {
-			httpOnly: true,
-			sameSite: 'strict',
-		}).header('Authorization', accessToken);
+		user.tokens.push(refreshToken);
+		await user.save();
 		const userEx: UserDocument[] = await User.aggregate([
 			{
 				$match: { _id: user._id },
@@ -73,7 +69,18 @@ const login = asyncHandler(
 		]);
 		res.json({
 			success: true,
-			user: userEx[0],
+			user: {
+				_id: userEx[0]._id,
+				f_name: userEx[0].f_name,
+				l_name: userEx[0].l_name,
+				email: userEx[0].email,
+				picture: userEx[0].picture,
+				createdAt: userEx[0].createdAt,
+				followers: userEx[0].followers,
+				following: userEx[0].following,
+			},
+			accessToken,
+			refreshToken,
 		});
 	}
 );
@@ -339,33 +346,91 @@ const updateUser = asyncHandler(
 	}
 );
 
-const refresh = asyncHandler(
+const refresh = asyncHandler(async (req, res) => {
+	const authHeader = req.headers['authorization'];
+	const refreshToken = authHeader && authHeader.split(' ')[1];
+	if (!refreshToken) {
+		res.status(400);
+		throw new Error('No refresh token provided.');
+	}
+	let decoded;
+	try {
+		decoded = jwt.verify(
+			refreshToken,
+			process.env.JWT_SECRET_REFRESH!
+		) as JwtPayload;
+	} catch (error) {
+		res.status(400);
+		throw new Error('Token failed');
+	}
+
+	const user = await User.findById(decoded.id);
+	if (!user) {
+		res.status(404);
+		throw new Error('User not found');
+	}
+	if (!user.tokens.includes(refreshToken)) {
+		user.tokens = [];
+		await user.save();
+		res.status(401);
+		throw new Error('Invalid refresh token');
+	}
+	const accessToken: string = jwt.sign(
+		{ id: decoded.id },
+		process.env.JWT_SECRET!,
+		{ expiresIn: '1h' }
+	);
+
+	const newRefreshToken: string = jwt.sign(
+		{ id: decoded.id },
+		process.env.JWT_SECRET_REFRESH!
+	);
+
+	user.tokens[user.tokens.indexOf(refreshToken)] = newRefreshToken;
+	await user.save();
+
+	res.json({
+		success: true,
+		accessToken,
+		refreshToken: newRefreshToken,
+	});
+});
+
+const logout = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
-		const refreshToken: string = req.cookies['refreshToken'];
+		const authHeader = req.headers['authorization'];
+		const refreshToken = authHeader && authHeader.split(' ')[1];
 		if (!refreshToken) {
 			res.status(400);
-			throw new Error('No refresh token provided');
+			throw new Error('No refresh token provided.');
 		}
+		let decoded;
 		try {
-			const decoded = jwt.verify(
+			decoded = jwt.verify(
 				refreshToken,
 				process.env.JWT_SECRET_REFRESH!
 			) as JwtPayload;
-			const accessToken = jwt.sign(
-				{ id: decoded.id },
-				process.env.JWT_SECRET!,
-				{ expiresIn: '1h' }
-			);
-
-			res.header('Authorization', accessToken);
-			res.json({
-				success: true,
-				token: true,
-			});
 		} catch (error) {
 			res.status(400);
 			throw new Error('Token failed');
 		}
+		const user = await User.findById(decoded.id);
+		if (!user) {
+			res.status(404);
+			throw new Error('User not found');
+		}
+		if (!user.tokens.includes(refreshToken)) {
+			user.tokens = [];
+			await user.save();
+			res.status(401);
+			throw new Error('Invalid token');
+		}
+		user.tokens = user.tokens.filter((t) => t !== refreshToken);
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Logged out successfully',
+		});
 	}
 );
 
@@ -426,4 +491,5 @@ export {
 	followUser,
 	unFollowUser,
 	getUserId,
+	logout,
 };
