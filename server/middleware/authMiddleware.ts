@@ -24,6 +24,11 @@ const authUser = asyncHandler(
 				throw new Error('User not found');
 			}
 
+			if (!req.user.isVerified) {
+				res.status(401);
+				throw new Error('User not verified');
+			}
+
 			next();
 		} catch (error) {
 			if (!refreshToken) {

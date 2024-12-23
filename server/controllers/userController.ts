@@ -1,5 +1,5 @@
 import asyncHandler from 'express-async-handler';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import User, { UserDocument } from '../models/userModel';
@@ -15,6 +15,10 @@ import { ObjectId } from 'mongoose';
 const login = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 		const { email, password } = req.body;
+		if (!email || !password) {
+			res.status(400);
+			throw new Error('All fields are required');
+		}
 		if (!email_regex.test(email)) {
 			res.status(400);
 			throw new Error('Invalid email');
@@ -157,7 +161,9 @@ const deleteUser = asyncHandler(
 			)
 		);
 		promises.push(deleteUserPosts(id));
-		promises.push(deleteFile(user.picture));
+		if (user.picture) {
+			promises.push(deleteFile(user.picture));
+		}
 		promises.push(deleteUserCommentsAndReplies(id));
 		promises.push(User.findByIdAndDelete(id));
 		const [_, _2, posts] = await Promise.all(promises);
@@ -169,6 +175,90 @@ const deleteUser = asyncHandler(
 		res.json({
 			success: true,
 			message: 'User deleted successfully',
+		});
+	}
+);
+
+const followUser = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		const { id } = req.params;
+		if (id === (user._id as ObjectId).toString()) {
+			res.status(400);
+			throw new Error('Cannot follow yourself');
+		}
+		const userToFollow = await User.findById(id);
+		if (!userToFollow) {
+			res.status(400);
+			throw new Error('User not found');
+		}
+
+		if (user.following.filter((f) => f.toString() === id).length > 0) {
+			res.status(400);
+			throw new Error('Already following user');
+		}
+		let promises: Promise<any>[] = [];
+		promises.push(
+			User.findByIdAndUpdate(user._id, { $push: { following: id } })
+		);
+		promises.push(
+			User.findByIdAndUpdate(id, { $push: { followers: user._id } })
+		);
+		await Promise.all(promises);
+		res.json({
+			success: true,
+			message: 'User followed successfully',
+		});
+	}
+);
+
+const unFollowUser = asyncHandler(async (req: Request, res: Response) => {
+	const user = req.user!;
+	const { id } = req.params;
+	if (id === (user._id as ObjectId).toString()) {
+		res.status(400);
+		throw new Error('Cannot unfollow yourself');
+	}
+	const userToUnFollow = await User.findById(id);
+	if (!userToUnFollow) {
+		res.status(400);
+		throw new Error('User not found');
+	}
+	if (user.following.filter((f) => f.toString() === id).length === 0) {
+		res.status(400);
+		throw new Error('Not following user');
+	}
+	let promises: Promise<any>[] = [];
+	promises.push(
+		User.findByIdAndUpdate(user._id, { $pull: { following: id } })
+	);
+	promises.push(
+		User.findByIdAndUpdate(id, { $pull: { followers: user._id } })
+	);
+	await Promise.all(promises);
+	res.json({
+		success: true,
+		message: 'User unFollowed successfully',
+	});
+});
+
+const verifyEmail = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const { id } = req.params;
+		const user = await User.findById(id);
+		if (!user) {
+			res.status(400);
+			throw new Error('User not found');
+		}
+		if (user.isVerified) {
+			res.status(400);
+			throw new Error('Email already verified');
+		}
+		user.isVerified = true;
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Email verified successfully',
 		});
 	}
 );
@@ -216,15 +306,35 @@ const updateUser = asyncHandler(
 			picture = req.file.path;
 		}
 		if (deletePicture) {
-			if (!req.file) {
+			if (req.file) {
+				await deleteFile(req.file.path);
+			}
+			if (user.picture) {
 				await deleteFile(user.picture);
 			}
 			picture = undefined;
 		}
-		await User.findByIdAndUpdate(user._id, { f_name, l_name, picture });
+		const userUpdated = await User.findByIdAndUpdate(
+			user._id,
+			{
+				f_name,
+				l_name,
+				picture,
+			},
+			{ new: true }
+		);
 		res.json({
 			success: true,
-			message: 'User updated successfully',
+			user: {
+				_id: userUpdated!._id,
+				f_name: userUpdated!.f_name,
+				l_name: userUpdated!.l_name,
+				email: userUpdated!.email,
+				picture: userUpdated!.picture,
+				createdAt: userUpdated!.createdAt,
+				followers: userUpdated!.followers,
+				following: userUpdated!.following,
+			},
 		});
 	}
 );
@@ -293,6 +403,16 @@ const googleLogin = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {}
 );
 
+const getUserId = async (email: string): Promise<string> => {
+	const user = await User.findOne({
+		email: { $regex: new RegExp(`^${email}$`, 'i') },
+	});
+	if (!user) {
+		return '';
+	}
+	return user._id.toString();
+};
+
 export {
 	login,
 	register,
@@ -302,4 +422,8 @@ export {
 	refresh,
 	googleLogin,
 	resendEmail,
+	verifyEmail,
+	followUser,
+	unFollowUser,
+	getUserId,
 };

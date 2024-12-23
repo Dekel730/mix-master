@@ -28,6 +28,9 @@ connectDB(() => {
 	}
 });
 
+// access to upload folder
+app.use('/uploads', express.static('uploads'));
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use('/api/user', userRoutes);
