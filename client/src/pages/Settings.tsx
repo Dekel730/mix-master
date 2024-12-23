@@ -73,7 +73,7 @@ const Settings: React.FC = () => {
 
 	return (
 		<main>
-			<div className="w-full min-h-screen bg-[#1a1a1a] p-4 text-white text-center">
+			<div className="w-full flex-1 bg-[#1a1a1a] p-4 text-white text-center">
 				<h1 className="text-2xl font-bold mb-6">Settings</h1>
 				<div className="flex flex-col md:flex-row gap-4 text-start">
 					{/* Tabs container */}
