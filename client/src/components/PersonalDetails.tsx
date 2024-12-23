@@ -1,15 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { FieldValues, useForm } from 'react-hook-form';
-import { FaBook, FaUser } from 'react-icons/fa';
+import { FaBook, FaTrash, FaUser } from 'react-icons/fa';
 import z from 'zod';
 import { IUserSettings } from '../types/user';
 import Spinner from './Spinner';
-import { authPut } from '../utils/requests';
+import { authDel, authPut } from '../utils/requests';
 import { toast } from 'react-toastify';
 import Input from './inputs/Input';
 import FileInput from './inputs/FileInput';
 import TextArea from './inputs/TextArea';
+import { MAX_BIO_LENGTH } from '../utils/consts';
+import Modal from './Modal';
+import { deleteAuthLocalStorage } from '../utils/functions';
 
 interface PersonalDetailsProps {
 	user: IUserSettings;
@@ -34,7 +37,23 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [deleteFile, setDeleteFile] = useState<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
-	const MAX_BIO_LENGTH = 250;
+	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+	const handleDeleteUser = async () => {
+		setIsLoading(true);
+		await authDel(
+			'/user',
+			(message: string) => {
+				toast.error(message);
+			},
+			() => {
+				deleteAuthLocalStorage();
+				toast.info('Account deleted successfully');
+				setIsDeleteModalOpen(false);
+			}
+		);
+		setIsLoading(false);
+	};
 
 	const submit = async (data: FieldValues) => {
 		const formData = new FormData();
@@ -118,7 +137,15 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						defaultName={user.picture}
 					/>
 				</div>
-				<div className="w-full flex items-center justify-center space-x-4 mt-6">
+				<div className="flex justify-between items-center mt-6">
+					<button
+						type="button"
+						className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors flex items-center"
+						onClick={() => setIsDeleteModalOpen(true)}
+					>
+						<FaTrash className="mr-2" />
+						Delete Account
+					</button>
 					<button
 						type="submit"
 						className="bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors px-6"
@@ -126,6 +153,15 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						{isLoading ? <Spinner /> : 'Save'}
 					</button>
 				</div>
+				<Modal
+					isOpen={isDeleteModalOpen}
+					onClose={() => setIsDeleteModalOpen(false)}
+					onConfirm={handleDeleteUser}
+					title="Are you absolutely sure?"
+					description="This action cannot be undone. This will permanently delete your account and remove your data from our servers."
+					confirmText="Delete Account"
+					cancelText="Cancel"
+				/>
 			</form>
 		</div>
 	);

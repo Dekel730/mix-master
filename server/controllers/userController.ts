@@ -32,7 +32,10 @@ const createUserLogin = async (
 	if (token) {
 		const index = user.tokens.findIndex((t) => t.device_id === device.id);
 		user.tokens[index] = {
-			...token,
+			device_id: token.device_id,
+			type: token.type,
+			name: token.name,
+			createdAt: token.createdAt,
 			token: refreshToken,
 		};
 	} else {
@@ -474,7 +477,13 @@ const refresh = asyncHandler(async (req, res) => {
 
 	const index = user.tokens.findIndex((t) => t.token === refreshToken);
 
-	user.tokens[index] = { ...device, token: newRefreshToken };
+	user.tokens[index] = {
+		device_id: device.device_id,
+		type: device.type,
+		name: device.name,
+		createdAt: device.createdAt,
+		token: newRefreshToken,
+	};
 	await user.save();
 
 	res.json({
@@ -570,6 +579,10 @@ const googleLogin = asyncHandler(
 			res.status(400);
 			throw new Error('No code provided');
 		}
+		if (!device.id || !device.name || !device.type) {
+			res.status(400);
+			throw new Error('Invalid device');
+		}
 		const response = await client.getToken(code);
 		const ticket = await client.verifyIdToken({
 			idToken: response.tokens.id_token!,
@@ -610,6 +623,31 @@ const googleLogin = asyncHandler(
 			}
 			createUserLogin(res, user, device);
 		}
+	}
+);
+
+const changePassword = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		const { password } = req.body;
+		if (!password) {
+			res.status(400);
+			throw new Error('Password is required');
+		}
+		if (!password_regex.test(password)) {
+			res.status(400);
+			throw new Error(
+				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
+			);
+		}
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
+		user.password = hashedPassword;
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Password changed successfully',
+		});
 	}
 );
 
@@ -670,4 +708,5 @@ export {
 	getUserSettings,
 	disconnectDevice,
 	disconnectAllDevices,
+	changePassword,
 };

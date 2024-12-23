@@ -22,16 +22,11 @@ const UserProfile = () => {
 		pages: 30,
 	});
 
-	const hasRunUser = useRef<boolean>(false);
-	const hasRunCocktails = useRef<number>(0);
+	const hasRunData = useRef<boolean>(false);
 
 	const { id } = useParams<{ id: string }>();
 
 	const getUser = async () => {
-		if (import.meta.env.VITE_ENV === 'development') {
-			if (hasRunUser.current) return;
-			hasRunUser.current = true;
-		}
 		await authGet(
 			`/user/${id}`,
 			(message: string) => {
@@ -47,12 +42,6 @@ const UserProfile = () => {
 	};
 
 	const getCocktails = async (page?: number, loading?: boolean) => {
-		if (import.meta.env.VITE_ENV === 'development') {
-			hasRunCocktails.current++;
-			if (hasRunCocktails.current === 2) {
-				return;
-			}
-		}
 		page = page || 1;
 		if (loading) {
 			setIsLoading(true);
@@ -108,6 +97,10 @@ const UserProfile = () => {
 	};
 
 	const getData = async () => {
+		if (import.meta.env.VITE_ENV === 'development') {
+			if (hasRunData.current) return;
+			hasRunData.current = true;
+		}
 		setIsLoading(true);
 		const accessToken = await getAccessToken();
 		if (!accessToken) {

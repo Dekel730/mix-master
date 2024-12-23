@@ -16,6 +16,7 @@ import {
 	getUserSettings,
 	disconnectAllDevices,
 	disconnectDevice,
+	changePassword,
 } from '../controllers/userController';
 import upload from '../config/storage';
 
@@ -25,6 +26,7 @@ router.post('/login', login);
 router.post('/register', upload.single('picture'), register);
 router.post('/refresh', refresh);
 router.route('/logout').post(logout);
+router.put('/password', authUser, changePassword);
 router.delete('/', authUser, deleteUser);
 router.get('/', authUser, getUserSettings);
 router.get('/verify/:id', verifyEmail);

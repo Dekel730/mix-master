@@ -2,7 +2,7 @@ import z from 'zod';
 import { password_regex } from '../utils/regex';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { authPost } from '../utils/requests';
+import { authPut } from '../utils/requests';
 import { toast } from 'react-toastify';
 import { FieldValues, useForm } from 'react-hook-form';
 import Spinner from './Spinner';
@@ -36,8 +36,8 @@ const PasswordChange = () => {
 
 	const onSubmit = async (data: FieldValues) => {
 		setIsLoading(true);
-		await authPost(
-			'/user/change-password',
+		await authPut(
+			'/user/password',
 			data,
 			() => {
 				toast.error('Failed to change password');

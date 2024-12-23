@@ -86,7 +86,6 @@ const UserScheme = new mongoose.Schema<IUser>(
 				},
 				createdAt: {
 					type: Date,
-					required: true,
 				},
 				name: {
 					type: String,
