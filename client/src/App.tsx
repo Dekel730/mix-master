@@ -10,9 +10,10 @@ import UserProfile from './pages/UserProfile';
 import Explore from './pages/Explore';
 import CocktailDetails from './pages/CocktailDetails';
 import CocktailNew from './pages/CocktailNew';
-import ProtectedRoute from './components/ProtectedRoute';
-import UserRestrictedRoute from './components/UserRestrictedRoute';
+import ProtectedRoute from './components/routes/ProtectedRoute';
+import UserRestrictedRoute from './components/routes/UserRestrictedRoute';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import Settings from './pages/Settings';
 
 function App() {
 	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
@@ -119,6 +120,16 @@ function App() {
 									isAuthenticated={isAuthenticated}
 								>
 									<UserProfile />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/settings"
+							element={
+								<ProtectedRoute
+									isAuthenticated={isAuthenticated}
+								>
+									<Settings />
 								</ProtectedRoute>
 							}
 						/>

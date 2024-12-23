@@ -51,3 +51,11 @@ body {
 #google:focus-visible {
 	outline: 4px auto -webkit-focus-ring-color;
 }
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none; /* Hides scrollbar for Webkit browsers */
+}
+.scrollbar-hide {
+	-ms-overflow-style: none; /* Hides scrollbar for IE and Edge */
+	scrollbar-width: none; /* Hides scrollbar for Firefox */
+}

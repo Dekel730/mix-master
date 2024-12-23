@@ -1,8 +1,9 @@
+import { del } from './../../client/src/utils/requests';
 import asyncHandler from 'express-async-handler';
 import * as bcrypt from 'bcrypt';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import User, { UserDocument } from '../models/userModel';
+import User, { Device, UserDocument } from '../models/userModel';
 import { email_regex, password_regex } from '../utils/regex';
 import { deleteFile, sendEmail } from '../utils/functions';
 import {
@@ -15,7 +16,11 @@ import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
 import Post from '../models/postModel';
 
-const createUserLogin = async (res: Response, user: UserDocument) => {
+const createUserLogin = async (
+	res: Response,
+	user: UserDocument,
+	device: Device
+) => {
 	const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
 		expiresIn: '1h',
 	});
@@ -23,7 +28,25 @@ const createUserLogin = async (res: Response, user: UserDocument) => {
 		{ id: user._id },
 		process.env.JWT_SECRET_REFRESH!
 	);
-	user.tokens.push(refreshToken);
+	const token = user.tokens.find((t) => t.device_id === device.id);
+	if (token) {
+		const index = user.tokens.findIndex((t) => t.device_id === device.id);
+		user.tokens[index] = {
+			device_id: token.device_id,
+			type: token.type,
+			name: token.name,
+			createdAt: token.createdAt,
+			token: refreshToken,
+		};
+	} else {
+		user.tokens.push({
+			token: refreshToken,
+			device_id: device.id,
+			createdAt: new Date(),
+			name: device.name,
+			type: device.type,
+		});
+	}
 	await user.save();
 	const userEx: UserDocument[] = await User.aggregate([
 		{
@@ -59,7 +82,15 @@ const createUserLogin = async (res: Response, user: UserDocument) => {
 
 const login = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-		const { email, password } = req.body;
+		const {
+			email,
+			password,
+			device,
+		}: {
+			email: string;
+			password: string;
+			device: Device;
+		} = req.body;
 		if (!email || !password) {
 			res.status(400);
 			throw new Error('All fields are required');
@@ -84,7 +115,7 @@ const login = asyncHandler(
 			res.status(400);
 			throw new Error('Invalid email or password');
 		}
-		createUserLogin(res, user);
+		createUserLogin(res, user, device);
 	}
 );
 
@@ -287,7 +318,8 @@ const getUser = asyncHandler(
 			throw new Error('User not found');
 		}
 		const self = (userReq._id as ObjectId).toString() === id;
-		const isFollowing = userReq.following.find((f) => f.toString() === id) !== undefined;
+		const isFollowing =
+			userReq.following.find((f) => f.toString() === id) !== undefined;
 
 		res.json({
 			success: true,
@@ -302,7 +334,29 @@ const getUser = asyncHandler(
 				followers: user.followers.length,
 				following: user.following.length,
 				self,
-				isFollowing
+				isFollowing,
+			},
+		});
+	}
+);
+
+const getUserSettings = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		res.json({
+			success: true,
+			user: {
+				f_name: user.f_name,
+				l_name: user.l_name,
+				email: user.email,
+				picture: user.picture,
+				bio: user.bio,
+				devices: user.tokens.map((t) => ({
+					device_id: t.device_id,
+					createdAt: t.createdAt,
+					name: t.name,
+					type: t.type,
+				})),
 			},
 		});
 	}
@@ -319,7 +373,7 @@ const updateUser = asyncHandler(
 		}: {
 			f_name: string;
 			l_name: string;
-			deletePicture: boolean | undefined;
+			deletePicture: string | undefined;
 			bio?: string;
 		} = req.body;
 		if (!f_name || !l_name) {
@@ -329,19 +383,29 @@ const updateUser = asyncHandler(
 			res.status(400);
 			throw new Error('First name and last name are required');
 		}
-		let picture: string | undefined = user.picture;
+		if (bio && bio.length > 250) {
+			if (req.file) {
+				await deleteFile(req.file.path);
+			}
+			res.status(400);
+			throw new Error('Bio must be less than 250 characters');
+		}
+		let picture: string | null = user.picture;
+		let deletePictureBool = deletePicture === 'true';
 		if (req.file) {
-			await deleteFile(user.picture);
+			if (user.picture) {
+				await deleteFile(user.picture);
+			}
 			picture = req.file.path;
 		}
-		if (deletePicture) {
+		if (deletePictureBool) {
 			if (req.file) {
 				await deleteFile(req.file.path);
 			}
 			if (user.picture) {
 				await deleteFile(user.picture);
 			}
-			picture = undefined;
+			picture = null;
 		}
 		const userUpdated = await User.findByIdAndUpdate(
 			user._id,
@@ -393,12 +457,13 @@ const refresh = asyncHandler(async (req, res) => {
 		res.status(404);
 		throw new Error('User not found');
 	}
-	if (!user.tokens.includes(refreshToken)) {
+	if (!user.tokens.find((t) => t.token === refreshToken)) {
 		user.tokens = [];
 		await user.save();
 		res.status(401);
 		throw new Error('Invalid refresh token');
 	}
+	const device = user.tokens.find((t) => t.token === refreshToken)!;
 	const accessToken: string = jwt.sign(
 		{ id: decoded.id },
 		process.env.JWT_SECRET!,
@@ -410,7 +475,15 @@ const refresh = asyncHandler(async (req, res) => {
 		process.env.JWT_SECRET_REFRESH!
 	);
 
-	user.tokens[user.tokens.indexOf(refreshToken)] = newRefreshToken;
+	const index = user.tokens.findIndex((t) => t.token === refreshToken);
+
+	user.tokens[index] = {
+		device_id: device.device_id,
+		type: device.type,
+		name: device.name,
+		createdAt: device.createdAt,
+		token: newRefreshToken,
+	};
 	await user.save();
 
 	res.json({
@@ -443,13 +516,13 @@ const logout = asyncHandler(
 			res.status(404);
 			throw new Error('User not found');
 		}
-		if (!user.tokens.includes(refreshToken)) {
+		if (!user.tokens.find((t) => t.token === refreshToken)) {
 			user.tokens = [];
 			await user.save();
 			res.status(401);
 			throw new Error('Invalid token');
 		}
-		user.tokens = user.tokens.filter((t) => t !== refreshToken);
+		user.tokens = user.tokens.filter((t) => t.token !== refreshToken);
 		await user.save();
 		res.json({
 			success: true,
@@ -495,10 +568,20 @@ const googleLogin = asyncHandler(
 			process.env.GOOGLE_CLIENT_SECRET,
 			'postmessage'
 		);
-		const { code } = req.body;
+		const {
+			code,
+			device,
+		}: {
+			code: string;
+			device: Device;
+		} = req.body;
 		if (!code) {
 			res.status(400);
 			throw new Error('No code provided');
+		}
+		if (!device.id || !device.name || !device.type) {
+			res.status(400);
+			throw new Error('Invalid device');
 		}
 		const response = await client.getToken(code);
 		const ticket = await client.verifyIdToken({
@@ -511,8 +594,6 @@ const googleLogin = asyncHandler(
 			res.status(400);
 			throw new Error('Invalid code');
 		}
-
-		console.log(payload);
 
 		const email = payload.email;
 		if (!email) {
@@ -534,14 +615,69 @@ const googleLogin = asyncHandler(
 				isVerified: true,
 			});
 			await newUser.save();
-			createUserLogin(res, newUser);
+			createUserLogin(res, newUser, device);
 		} else {
 			if (!user.isVerified) {
 				user.isVerified = true;
 				await user.save();
 			}
-			createUserLogin(res, user);
+			createUserLogin(res, user, device);
 		}
+	}
+);
+
+const changePassword = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		const { password } = req.body;
+		if (!password) {
+			res.status(400);
+			throw new Error('Password is required');
+		}
+		if (!password_regex.test(password)) {
+			res.status(400);
+			throw new Error(
+				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
+			);
+		}
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
+		user.password = hashedPassword;
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Password changed successfully',
+		});
+	}
+);
+
+const disconnectDevice = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		const { id } = req.params;
+		const device = user.tokens.find((t) => t.device_id === id);
+		if (!device) {
+			res.status(400);
+			throw new Error('Device not found');
+		}
+		user.tokens = user.tokens.filter((t) => t.device_id !== id);
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Device disconnected successfully',
+		});
+	}
+);
+
+const disconnectAllDevices = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const user = req.user!;
+		user.tokens = [];
+		await user.save();
+		res.json({
+			success: true,
+			message: 'All devices disconnected successfully',
+		});
 	}
 );
 
@@ -569,4 +705,8 @@ export {
 	unFollowUser,
 	getUserId,
 	logout,
+	getUserSettings,
+	disconnectDevice,
+	disconnectAllDevices,
+	changePassword,
 };

@@ -13,6 +13,10 @@ import {
 	unFollowUser,
 	verifyEmail,
 	logout,
+	getUserSettings,
+	disconnectAllDevices,
+	disconnectDevice,
+	changePassword,
 } from '../controllers/userController';
 import upload from '../config/storage';
 
@@ -22,13 +26,17 @@ router.post('/login', login);
 router.post('/register', upload.single('picture'), register);
 router.post('/refresh', refresh);
 router.route('/logout').post(logout);
+router.put('/password', authUser, changePassword);
 router.delete('/', authUser, deleteUser);
+router.get('/', authUser, getUserSettings);
+router.get('/verify/:id', verifyEmail);
+router.get('/follow/:id', authUser, followUser);
+router.get('/unfollow/:id', authUser, unFollowUser);
+router.get('/disconnect/:id', authUser, disconnectDevice);
+router.get('/disconnect', authUser, disconnectAllDevices);
 router.get('/:id', authUser, getUser);
 router.put('/', authUser, upload.single('picture'), updateUser);
 router.post('/google', googleLogin);
 router.post('/resend', resendEmail);
-router.get('/verify/:id', verifyEmail);
-router.get('/follow/:id', authUser, followUser);
-router.get('/unfollow/:id', authUser, unFollowUser);
 
 export default router;

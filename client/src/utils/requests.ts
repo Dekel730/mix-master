@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { deleteAuthLocalStorage } from './functions';
 
 const api = axios.create({
 	baseURL: import.meta.env.VITE_API_URL,
@@ -86,7 +87,7 @@ export const del = async (
 	}
 };
 
-const getAccessToken = async (): Promise<string | null> => {
+export const getAccessToken = async (): Promise<string | null> => {
 	const accessToken: string | null = localStorage.getItem('accessToken');
 	const expiresAt: string | null = localStorage.getItem('expiresAt');
 	if (accessToken && expiresAt && new Date(expiresAt) > new Date()) {
@@ -132,11 +133,7 @@ export const authGet = async (
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		localStorage.removeItem('accessToken');
-		localStorage.removeItem('refreshToken');
-		localStorage.removeItem('expiresAt');
-		localStorage.removeItem('user');
-		localStorage.removeItem('isAuthenticated');
+		deleteAuthLocalStorage();
 		onFail('Please login to continue');
 		return;
 	}
@@ -166,11 +163,7 @@ export const authPost = async (
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		localStorage.removeItem('accessToken');
-		localStorage.removeItem('refreshToken');
-		localStorage.removeItem('expiresAt');
-		localStorage.removeItem('user');
-		localStorage.removeItem('isAuthenticated');
+		deleteAuthLocalStorage();
 		onFail('Please login to continue');
 		return;
 	}
@@ -200,11 +193,7 @@ export const authPut = async (
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		localStorage.removeItem('accessToken');
-		localStorage.removeItem('refreshToken');
-		localStorage.removeItem('expiresAt');
-		localStorage.removeItem('user');
-		localStorage.removeItem('isAuthenticated');
+		deleteAuthLocalStorage();
 		onFail('Please login to continue');
 		return;
 	}
@@ -233,11 +222,7 @@ export const authDel = async (
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		localStorage.removeItem('accessToken');
-		localStorage.removeItem('refreshToken');
-		localStorage.removeItem('expiresAt');
-		localStorage.removeItem('user');
-		localStorage.removeItem('isAuthenticated');
+		deleteAuthLocalStorage();
 		onFail('Please login to continue');
 		return;
 	}

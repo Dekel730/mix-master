@@ -1,13 +1,16 @@
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import Loader from '../components/Loader';
-import { authGet } from '../utils/requests';
+import { authGet, getAccessToken } from '../utils/requests';
 import { toast } from 'react-toastify';
 import { getUserPicture } from '../utils/functions';
 import { IUserProfile, userProfileDefault } from '../types/user';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
 import CocktailList from '../components/CocktailList';
+import Spinner from '../components/Spinner';
+import { motion } from 'framer-motion';
+import { deleteAuthLocalStorage } from '../utils/functions';
 
 const UserProfile = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -16,13 +19,14 @@ const UserProfile = () => {
 	const [CocktailsData, setCocktailsData] = useState<any>({
 		cocktails: [],
 		count: 2,
-		pages: 1,
+		pages: 30,
 	});
+
+	const hasRunData = useRef<boolean>(false);
 
 	const { id } = useParams<{ id: string }>();
 
 	const getUser = async () => {
-		setIsLoading(true);
 		await authGet(
 			`/user/${id}`,
 			(message: string) => {
@@ -35,7 +39,6 @@ const UserProfile = () => {
 				});
 			}
 		);
-		setIsLoading(false);
 	};
 
 	const getCocktails = async (page?: number, loading?: boolean) => {
@@ -93,8 +96,25 @@ const UserProfile = () => {
 		setFollowing(false);
 	};
 
+	const getData = async () => {
+		if (import.meta.env.VITE_ENV === 'development') {
+			if (hasRunData.current) return;
+			hasRunData.current = true;
+		}
+		setIsLoading(true);
+		const accessToken = await getAccessToken();
+		if (!accessToken) {
+			toast.error('Please login to continue');
+			deleteAuthLocalStorage();
+			return;
+		}
+		const promises = [getUser(), getCocktails()];
+		await Promise.all(promises);
+		setIsLoading(false);
+	};
+
 	useEffect(() => {
-		getUser();
+		getData();
 	}, []);
 
 	if (isLoading) {
@@ -112,21 +132,18 @@ const UserProfile = () => {
 									{user.f_name} {user.l_name}
 								</h1>
 							</div>
-							{user.self && (
-								<button className="bg-[#D93025] hover:bg-[#B71C1C] text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out">
-									Edit Profile
-								</button>
-							)}
 						</div>
 
 						<div className="py-6">
 							<div className="grid md:grid-cols-3 gap-8">
 								{/* Profile Info */}
 								<div className="md:col-span-1">
-									<img
+									<motion.img
 										src={getUserPicture(user.picture)}
+										animate={{ scale: [0, 1] }}
+										transition={{ delay: 0.5 }}
 										alt="Profile picture"
-										className="rounded-lg w-full object-cover mb-4"
+										className="rounded-full w-80 h-80 object-cover mb-6 mx-auto"
 									/>
 									<div className="grid grid-cols-3 gap-4 text-center mb-4">
 										<div>
@@ -166,7 +183,7 @@ const UserProfile = () => {
                       items-center justify-center space-x-2 bg-[#D93025] hover:bg-[#B71C1C] 
                       text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out mb-4"
 										>
-											{following && <Loader />}
+											{following && <Spinner />}
 											{!following &&
 												(user.isFollowing ? (
 													<Fragment>
