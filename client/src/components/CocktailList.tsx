@@ -5,7 +5,7 @@ import Spinner from './Spinner';
 
 interface CocktailListProps {
 	cocktails: any;
-	fetchMore: (page: number) => Promise<void>;
+	fetchMore: (page: number) => Promise<boolean>;
 	pages: number;
 }
 const CocktailList = ({ cocktails, fetchMore, pages }: CocktailListProps) => {
@@ -14,7 +14,10 @@ const CocktailList = ({ cocktails, fetchMore, pages }: CocktailListProps) => {
 
 	const getCocktails = async (page: number) => {
 		setIsLoading(true);
-		await fetchMore(page);
+		const result = await fetchMore(page);
+		if (!result) {
+			setPage((prevPage) => prevPage - 1);
+		}
 		setIsLoading(false);
 	};
 

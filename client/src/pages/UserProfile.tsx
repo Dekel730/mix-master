@@ -41,23 +41,30 @@ const UserProfile = () => {
 		);
 	};
 
-	const getCocktails = async (page?: number, loading?: boolean) => {
+	const getCocktails = async (
+		page?: number,
+		loading?: boolean
+	): Promise<boolean> => {
 		page = page || 1;
 		if (loading) {
 			setIsLoading(true);
 		}
+		let result = false;
 		await authGet(
 			`/post/user/${id}?page=${page}`,
 			(message: string) => {
 				toast.error(message);
+				return false;
 			},
 			(data: any) => {
 				setCocktailsData(data);
+				result = true;
 			}
 		);
 		if (loading) {
 			setIsLoading(false);
 		}
+		return result;
 	};
 
 	const followUser = async () => {

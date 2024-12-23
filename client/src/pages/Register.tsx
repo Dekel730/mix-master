@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '../components/inputs/Input';
 import CreatePassword from '../components/CreatePassword';
 import FileInput from '../components/inputs/FileInput';
+import { getDeviceDetails } from '../utils/functions';
 
 interface IProps {
 	setIsAuthenticated: (isAuthenticated: boolean) => void;
@@ -23,6 +24,8 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 	const navigate = useNavigate();
 
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+	const device = getDeviceDetails();
 
 	const schema = z
 		.object({
@@ -98,12 +101,14 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 				`/user/google`,
 				{
 					code: authResult.code,
+					device,
 				},
 				(message: string) => {
 					toast.error(message);
 				},
 				(data: any) => {
 					successfulLogin(data);
+					toast.success('Logged in successfully');
 				}
 			);
 			setIsLoading(false);

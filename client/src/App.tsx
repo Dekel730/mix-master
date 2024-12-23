@@ -14,11 +14,15 @@ import ProtectedRoute from './components/routes/ProtectedRoute';
 import UserRestrictedRoute from './components/routes/UserRestrictedRoute';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Settings from './pages/Settings';
+import Header from './components/Header';
+import Loader from './components/Loader';
 
 function App() {
 	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
 		() => localStorage.getItem('isAuthenticated') === 'true'
 	);
+
+	const [isLoading, setIsLoading] = useState<boolean>(false);
 
 	useEffect(() => {
 		localStorage.setItem('isAuthenticated', String(isAuthenticated));
@@ -41,6 +45,10 @@ function App() {
 		};
 	}, []);
 
+	if (isLoading) {
+		return <Loader />;
+	}
+
 	return (
 		<>
 			<ToastContainer theme="colored" />
@@ -48,6 +56,7 @@ function App() {
 				clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
 			>
 				<Router>
+					{isAuthenticated && <Header setIsLoading={setIsLoading} />}
 					<Routes>
 						<Route
 							path="/"
