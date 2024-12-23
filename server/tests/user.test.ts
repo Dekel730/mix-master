@@ -144,6 +144,11 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(400);
 	});
 
+	it('should return 400 if no code provided - google', async () => {
+		const res = await request(app).post('/api/user/google').send({});
+		expect(res.statusCode).toEqual(400);
+	});
+
 	it('should return 200 if user was logged in - login', async () => {
 		const res = await request(app).post('/api/user/login').send({
 			email: user.email,
@@ -220,9 +225,16 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(400);
 	});
 
+	it('should return 404 if user not found - get user', async () => {
+		const res = await request(app)
+			.get('/api/user/' + noID)
+			.set('Authorization', `Bearer ${accessToken2}`);
+		expect(res.statusCode).toEqual(404);
+	});
+
 	it('should return 200 if user received - get user', async () => {
 		const res = await request(app)
-			.get('/api/user')
+			.get('/api/user/' + userId)
 			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(200);
 	});

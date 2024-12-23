@@ -13,6 +13,7 @@ import { deleteUserPosts } from './postController';
 import { ObjectId } from 'mongoose';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
+import Post from '../models/postModel';
 
 const createUserLogin = async (res: Response, user: UserDocument) => {
 	const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
@@ -274,17 +275,34 @@ const verifyEmail = asyncHandler(
 
 const getUser = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
-		const user = req.user!;
+		const userReq = req.user!;
+		const { id } = req.params;
+		const user = await User.findById(id);
+		if (!user) {
+			res.status(404);
+			throw new Error('User not found');
+		}
+		if (!user.isVerified) {
+			res.status(400);
+			throw new Error('User not found');
+		}
+		const self = (userReq._id as ObjectId).toString() === id;
+		const isFollowing = userReq.following.find((f) => f.toString() === id) !== undefined;
+
 		res.json({
 			success: true,
 			user: {
 				_id: user._id,
+				picture: user.picture,
+				bio: user.bio,
 				f_name: user.f_name,
 				l_name: user.l_name,
 				email: user.email,
 				createdAt: user.createdAt,
 				followers: user.followers.length,
 				following: user.following.length,
+				self,
+				isFollowing
 			},
 		});
 	}
@@ -297,10 +315,12 @@ const updateUser = asyncHandler(
 			f_name,
 			l_name,
 			deletePicture,
+			bio,
 		}: {
 			f_name: string;
 			l_name: string;
 			deletePicture: boolean | undefined;
+			bio?: string;
 		} = req.body;
 		if (!f_name || !l_name) {
 			if (req.file) {
@@ -329,6 +349,7 @@ const updateUser = asyncHandler(
 				f_name,
 				l_name,
 				picture,
+				bio,
 			},
 			{ new: true }
 		);
@@ -343,6 +364,7 @@ const updateUser = asyncHandler(
 				createdAt: userUpdated!.createdAt,
 				followers: userUpdated!.followers,
 				following: userUpdated!.following,
+				bio: userUpdated!.bio,
 			},
 		});
 	}
@@ -508,7 +530,7 @@ const googleLogin = asyncHandler(
 				l_name: payload.family_name,
 				email,
 				password,
-				picture: payload.picture || undefined,
+				picture: payload.picture,
 				isVerified: true,
 			});
 			await newUser.save();
