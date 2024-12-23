@@ -5,12 +5,15 @@ import { deleteAuthLocalStorage, getUserPicture } from '../utils/functions';
 import { Link } from 'react-router-dom';
 import { post } from '../utils/requests';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
 	setIsLoading: (isLoading: boolean) => void;
 }
 const Header = ({ setIsLoading }: HeaderProps) => {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+	const navigate = useNavigate();
 
 	const user: IUserProfile = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -39,7 +42,7 @@ const Header = ({ setIsLoading }: HeaderProps) => {
 
 	return (
 		<header className="bg-[#212121] p-4 flex justify-between items-center">
-			<div className="flex items-center">
+			<div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
 				<div className="bg-[#D93025] p-2 rounded-lg mr-2">
 					<FaCocktail className="w-6 h-6 text-white" />
 				</div>
