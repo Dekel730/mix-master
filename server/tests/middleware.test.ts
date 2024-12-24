@@ -5,14 +5,9 @@ import jwt from 'jsonwebtoken';
 
 process.env.NODE_ENV = 'test';
 
-var refreshToken: string, invalidUserToken: string;
+var invalidUserToken: string;
 
 beforeAll(async () => {
-	const res = await request(app).post('/api/user/login').send({
-		email: process.env.TEST_EMAIL_USER_1,
-		password: process.env.TEST_PASSWORD_USER_1,
-	});
-	refreshToken = res.body.refreshToken;
 	const randomMongoId = '60b0e6f4c9f8c72b1c1b3e7b';
 	invalidUserToken = jwt.sign(
 		{ id: randomMongoId },
