@@ -15,6 +15,7 @@ import { ObjectId } from 'mongoose';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
 import Post from '../models/postModel';
+import { MAX_BIO_LENGTH } from '../utils/consts';
 
 const createUserLogin = async (
 	res: Response,
@@ -91,7 +92,14 @@ const login = asyncHandler(
 			password: string;
 			device: Device;
 		} = req.body;
-		if (!email || !password) {
+		if (
+			!email ||
+			!password ||
+			!device ||
+			!device.id ||
+			!device.name ||
+			!device.type
+		) {
 			res.status(400);
 			throw new Error('All fields are required');
 		}
@@ -315,7 +323,7 @@ const getUser = asyncHandler(
 		}
 		if (!user.isVerified) {
 			res.status(400);
-			throw new Error('User not found');
+			throw new Error('User not verified');
 		}
 		const self = (userReq._id as ObjectId).toString() === id;
 		const isFollowing =
@@ -383,7 +391,7 @@ const updateUser = asyncHandler(
 			res.status(400);
 			throw new Error('First name and last name are required');
 		}
-		if (bio && bio.length > 250) {
+		if (bio && bio.length > MAX_BIO_LENGTH) {
 			if (req.file) {
 				await deleteFile(req.file.path);
 			}
@@ -579,7 +587,7 @@ const googleLogin = asyncHandler(
 			res.status(400);
 			throw new Error('No code provided');
 		}
-		if (!device.id || !device.name || !device.type) {
+		if (!device || !device.id || !device.name || !device.type) {
 			res.status(400);
 			throw new Error('Invalid device');
 		}
@@ -657,7 +665,7 @@ const disconnectDevice = asyncHandler(
 		const { id } = req.params;
 		const device = user.tokens.find((t) => t.device_id === id);
 		if (!device) {
-			res.status(400);
+			res.status(404);
 			throw new Error('Device not found');
 		}
 		user.tokens = user.tokens.filter((t) => t.device_id !== id);

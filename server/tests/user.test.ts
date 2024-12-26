@@ -3,11 +3,12 @@ import app from '../server';
 import { beforeAll, describe, expect, it } from '@jest/globals';
 import { getUserId } from '../controllers/userController';
 import jwt from 'jsonwebtoken';
+import { MAX_BIO_LENGTH } from '../utils/consts';
+import { Device } from '../models/userModel';
 
 process.env.NODE_ENV = 'test';
 
-var userId: string,
-	accessToken2: string,
+var accessToken2: string,
 	refreshToken: string,
 	newUserId: string,
 	invalidUserToken: string;
@@ -19,14 +20,21 @@ const user = {
 	password: 'Password123',
 };
 
+const device: Device = {
+	id: '123',
+	name: 'testDevice',
+	type: 'desktop',
+};
+
+const newDevice: Device = {
+	id: '456',
+	name: 'testDevice2',
+	type: 'desktop',
+};
+
 const noID = '6752d2e24222f986649b5809';
 
 beforeAll(async () => {
-	const res = await request(app).post('/api/user/login').send({
-		email: process.env.TEST_EMAIL_USER_1,
-		password: process.env.TEST_PASSWORD_USER_1,
-	});
-	userId = res.body.user._id;
 	const randomMongoId = '60b0e6f4c9f8c72b1c1b3e7b';
 	invalidUserToken = jwt.sign(
 		{ id: randomMongoId },
@@ -90,10 +98,18 @@ describe('User routes Test', () => {
 		expect(res.body.sent).toEqual(true);
 	});
 
+	it('should return 400 if user not verified - get user', async () => {
+		const res = await request(app)
+			.get(`/api/user/${newUserId}`)
+			.set('Authorization', `Bearer ${global.TestAccessToken}`);
+		expect(res.statusCode).toEqual(400);
+	});
+
 	it('should return 400 if user not verified - login', async () => {
 		const res = await request(app).post('/api/user/login').send({
 			email: user.email,
 			password: user.password,
+			device,
 		});
 		expect(res.statusCode).toEqual(400);
 	});
@@ -102,6 +118,7 @@ describe('User routes Test', () => {
 		const res = await request(app).post('/api/user/login').send({
 			email: '',
 			password: user.password,
+			device,
 		});
 		expect(res.statusCode).toEqual(400);
 	});
@@ -110,6 +127,7 @@ describe('User routes Test', () => {
 		const res = await request(app).post('/api/user/login').send({
 			email: 'invalidMail',
 			password: user.password,
+			device,
 		});
 		expect(res.statusCode).toEqual(400);
 	});
@@ -118,6 +136,7 @@ describe('User routes Test', () => {
 		const res = await request(app).post('/api/user/login').send({
 			email: 'testUser213124@example.com',
 			password: user.password,
+			device,
 		});
 		expect(res.statusCode).toEqual(400);
 	});
@@ -140,12 +159,23 @@ describe('User routes Test', () => {
 		const res = await request(app).post('/api/user/login').send({
 			email: user.email,
 			password: 'wrongPassword123',
+			device,
 		});
 		expect(res.statusCode).toEqual(400);
 	});
 
 	it('should return 400 if no code provided - google', async () => {
-		const res = await request(app).post('/api/user/google').send({});
+		const res = await request(app).post('/api/user/google').send({
+			code: '',
+			device,
+		});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if no code provided - google', async () => {
+		const res = await request(app).post('/api/user/google').send({
+			code: 'invalidCode',
+		});
 		expect(res.statusCode).toEqual(400);
 	});
 
@@ -153,6 +183,7 @@ describe('User routes Test', () => {
 		const res = await request(app).post('/api/user/login').send({
 			email: user.email,
 			password: user.password,
+			device,
 		});
 		expect(res.statusCode).toEqual(200);
 		accessToken2 = res.body.accessToken;
@@ -175,14 +206,21 @@ describe('User routes Test', () => {
 
 	it('should return 200 if user followed another user - follow user', async () => {
 		const res = await request(app)
-			.get(`/api/user/follow/${userId}`)
+			.get(`/api/user/follow/${global.TestUserId}`)
+			.set('Authorization', `Bearer ${accessToken2}`);
+		expect(res.statusCode).toEqual(200);
+	});
+
+	it('should return 200 if user received - get user', async () => {
+		const res = await request(app)
+			.get(`/api/user/${global.TestUserId}`)
 			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(200);
 	});
 
 	it('should return 400 if already following user - follow user', async () => {
 		const res = await request(app)
-			.get(`/api/user/follow/${userId}`)
+			.get(`/api/user/follow/${global.TestUserId}`)
 			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(400);
 	});
@@ -203,14 +241,14 @@ describe('User routes Test', () => {
 
 	it('should return 200 if user unfollowed another user - unfollow user', async () => {
 		const res = await request(app)
-			.get(`/api/user/unfollow/${userId}`)
+			.get(`/api/user/unfollow/${global.TestUserId}`)
 			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(200);
 	});
 
 	it('should return 400 if not following user - unfollow user', async () => {
 		const res = await request(app)
-			.get(`/api/user/unfollow/${userId}`)
+			.get(`/api/user/unfollow/${global.TestUserId}`)
 			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(400);
 	});
@@ -232,9 +270,9 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(404);
 	});
 
-	it('should return 200 if user received - get user', async () => {
+	it('should return 200 if user received - get user settings', async () => {
 		const res = await request(app)
-			.get('/api/user/' + userId)
+			.get('/api/user/')
 			.set('Authorization', `Bearer ${accessToken2}`);
 		expect(res.statusCode).toEqual(200);
 	});
@@ -249,12 +287,24 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(400);
 	});
 
-	it('should return 200 if user updated  - update user', async () => {
+	it('should return 400 if bio is over the max length  - update user', async () => {
 		const res = await request(app)
 			.put('/api/user')
 			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', 'John')
 			.field('l_name', 'Smith')
+			.field('bio', 'a'.repeat(MAX_BIO_LENGTH + 1))
+			.attach('picture', './tests/assets/test.jpeg');
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 200 if user updated and deleted picture  - update user', async () => {
+		const res = await request(app)
+			.put('/api/user')
+			.set('Authorization', `Bearer ${accessToken2}`)
+			.field('f_name', 'John')
+			.field('l_name', 'Smith')
+			.field('deletePicture', true)
 			.attach('picture', './tests/assets/test.jpeg');
 		expect(res.statusCode).toEqual(200);
 		expect(res.body.user.l_name).toEqual('Smith');
@@ -266,7 +316,6 @@ describe('User routes Test', () => {
 			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', 'John')
 			.field('l_name', 'Smith')
-			.field('deletePicture', true)
 			.attach('picture', './tests/assets/test.jpeg');
 		expect(res.statusCode).toEqual(200);
 		expect(res.body.user.l_name).toEqual('Smith');
@@ -298,7 +347,7 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(404);
 	});
 
-	it('should return access token if valid refresh token is provided', async () => {
+	it('should return access token if valid refresh token is provided - refresh', async () => {
 		const res = await request(app)
 			.post('/api/user/refresh')
 			.set('Authorization', `Bearer ${refreshToken}`)
@@ -340,6 +389,61 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(400);
 	});
 
+	it('should return 400 if no password provided - change password', async () => {
+		const res = await request(app)
+			.put('/api/user/password')
+			.set('authorization', `Bearer ${accessToken2}`)
+			.send({});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if invalid password - change password', async () => {
+		const res = await request(app)
+			.put('/api/user/password')
+			.set('authorization', `Bearer ${accessToken2}`)
+			.send({
+				password: '123',
+			});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 200 if password changed - change password', async () => {
+		const res = await request(app)
+			.put('/api/user/password')
+			.set('authorization', `Bearer ${accessToken2}`)
+			.send({
+				password: 'Password1234',
+			});
+		expect(res.statusCode).toEqual(200);
+		user.password = 'Password1234';
+	});
+
+	it('should return 404 if device not found - disconnect', async () => {
+		const res = await request(app)
+			.get(`/api/user/disconnect/12413u413`)
+			.set('authorization', `Bearer ${accessToken2}`);
+		expect(res.statusCode).toEqual(404);
+	});
+
+	it('should return 200 if device disconnected - disconnect', async () => {
+		const res1 = await request(app).post('/api/user/login').send({
+			email: user.email,
+			password: user.password,
+			device: newDevice,
+		});
+		const res = await request(app)
+			.get(`/api/user/disconnect/${newDevice.id}`)
+			.set('authorization', `Bearer ${accessToken2}`);
+		expect(res.statusCode).toEqual(200);
+	});
+
+	it('should return 200 if all devices disconnected - disconnect all', async () => {
+		const res = await request(app)
+			.get(`/api/user/disconnect`)
+			.set('authorization', `Bearer ${accessToken2}`);
+		expect(res.statusCode).toEqual(200);
+	});
+
 	it('should return 400 if no token provided - logout', async () => {
 		const res = await request(app).post('/api/user/logout').send({});
 		expect(res.statusCode).toEqual(400);
@@ -373,6 +477,7 @@ describe('User routes Test', () => {
 		const res1 = await request(app).post('/api/user/login').send({
 			email: user.email,
 			password: user.password,
+			device,
 		});
 		const newRefreshToken = res1.body.refreshToken;
 		const res = await request(app)
@@ -383,6 +488,7 @@ describe('User routes Test', () => {
 	});
 
 	it('should delete user - deleteUser', async () => {
+		// TODO: add post to delete all posts
 		const res = await request(app)
 			.delete('/api/user')
 			.set('Authorization', `Bearer ${accessToken2}`);
