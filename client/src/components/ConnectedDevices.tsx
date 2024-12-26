@@ -18,7 +18,7 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [isLoadingItem, setIsLoadingItem] = useState<string>('');
-	const [isDisinigrating, setIsDisintegrating] = useState<string>('');
+	const [isDisintegrating, setIsDisintegrating] = useState<string>('');
 
 	const getDeviceIcon = (type: string) => {
 		switch (type) {
@@ -96,7 +96,7 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 					{devices.map((device) => (
 						<ThanosSnap
 							isDisintegrating={
-								isDisinigrating === device.device_id
+								isDisintegrating === device.device_id
 							}
 							key={device.device_id}
 						>
