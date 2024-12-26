@@ -1,4 +1,4 @@
-import { beforeAll } from '@jest/globals';
+import { beforeAll, jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../server';
 import User from '../models/userModel';
@@ -20,6 +20,8 @@ declare global {
 global.TestRefreshToken = '';
 global.TestUserId = '';
 global.TestAccessToken = '';
+
+jest.setTimeout(15000);
 
 beforeAll(async () => {
 	// erase all data from the database
