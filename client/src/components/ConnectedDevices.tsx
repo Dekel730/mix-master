@@ -5,6 +5,8 @@ import { authGet } from '../utils/requests';
 import { toast } from 'react-toastify';
 import Loader from './Loader';
 import { deleteAuthLocalStorage, formatDate } from '../utils/functions';
+import ThanosSnap from './ThanosSnap';
+import Spinner from './Spinner';
 
 interface ConnectedDevicesProps {
 	devices: Device[];
@@ -15,6 +17,8 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 	const deviceId = localStorage.getItem('device_id') || '';
 
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [isLoadingItem, setIsLoadingItem] = useState<string>('');
+	const [isDisinigrating, setIsDisintegrating] = useState<string>('');
 
 	const getDeviceIcon = (type: string) => {
 		switch (type) {
@@ -30,7 +34,7 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 	};
 
 	const disconnectDevice = async (id: string) => {
-		setIsLoading(true);
+		setIsLoadingItem(id);
 		await authGet(
 			`/user/disconnect/${id}`,
 			(message: string) => {
@@ -42,15 +46,19 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 					toast.info('This device has been disconnected');
 					return;
 				}
-				setUser((prev) => ({
-					...prev,
-					devices: prev.devices.filter(
-						(device) => device.device_id !== id
-					),
-				}));
+				setIsDisintegrating(id);
+				setTimeout(() => {
+					setIsDisintegrating('');
+					setUser((prev) => ({
+						...prev,
+						devices: prev.devices.filter(
+							(device) => device.device_id !== id
+						),
+					}));
+				}, 2500);
 			}
 		);
-		setIsLoading(false);
+		setIsLoadingItem('');
 	};
 
 	const disconnectAllDevices = async () => {
@@ -86,36 +94,47 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 			{devices.length > 0 ? (
 				<ul className="space-y-4">
 					{devices.map((device) => (
-						<li
+						<ThanosSnap
+							isDisintegrating={
+								isDisinigrating === device.device_id
+							}
 							key={device.device_id}
-							className="flex items-center justify-between p-3 bg-[#2a2a2a] rounded-lg"
 						>
-							<div className="flex items-center">
-								<span className="mr-3 text-xl">
-									{getDeviceIcon(device.type)}
-								</span>
-								<div>
-									<h3 className="font-semibold text-white">
-										{deviceId === device.device_id
-											? device.name + ' (This Device)'
-											: device.name}
-									</h3>
-									<p className="text-sm text-gray-400">
-										Connected on:{' '}
-										{formatDate(device.createdAt)}
-									</p>
+							<li className="flex items-center justify-between p-3 bg-[#2a2a2a] rounded-lg">
+								<div className="flex items-center">
+									<span className="mr-3 text-xl">
+										{getDeviceIcon(device.type)}
+									</span>
+									<div>
+										<h3 className="font-semibold text-white">
+											{deviceId === device.device_id
+												? device.name + ' (This Device)'
+												: device.name}
+										</h3>
+										<p className="text-sm text-gray-400">
+											Connected on:{' '}
+											{formatDate(device.createdAt)}
+										</p>
+									</div>
 								</div>
-							</div>
-							<button
-								onClick={() =>
-									disconnectDevice(device.device_id)
-								}
-								className="bg-[#3a3a3a] text-white p-2 rounded-full hover:bg-[#4a4a4a] transition-colors"
-								aria-label={`Disconnect ${device.name}`}
-							>
-								<FaTimes />
-							</button>
-						</li>
+								<button
+									disabled={
+										isLoadingItem === device.device_id
+									}
+									onClick={() =>
+										disconnectDevice(device.device_id)
+									}
+									className="bg-[#3a3a3a] text-white p-2 rounded-full hover:bg-[#4a4a4a] transition-colors"
+									aria-label={`Disconnect ${device.name}`}
+								>
+									{isLoadingItem === device.device_id ? (
+										<Spinner />
+									) : (
+										<FaTimes />
+									)}
+								</button>
+							</li>
+						</ThanosSnap>
 					))}
 				</ul>
 			) : (

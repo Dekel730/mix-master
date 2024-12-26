@@ -1,5 +1,9 @@
+
 const Feed = () => {
-	return <main></main>;
+	return (
+		<main>
+		</main>
+	);
 };
 
 export default Feed;
