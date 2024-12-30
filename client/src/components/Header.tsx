@@ -9,8 +9,9 @@ import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
 	setIsLoading: (isLoading: boolean) => void;
+	setIsAuthenticated: (isAuthenticated: boolean) => void;
 }
-const Header = ({ setIsLoading }: HeaderProps) => {
+const Header = ({ setIsLoading, setIsAuthenticated }: HeaderProps) => {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 
 	const navigate = useNavigate();
@@ -30,19 +31,23 @@ const Header = ({ setIsLoading }: HeaderProps) => {
 				toast.error(message);
 			},
 			() => {
-				deleteAuthLocalStorage();
 				toast.info('Logged out successfully');
 			},
 			{
 				Authorization: `Bearer ${localStorage.getItem('refreshToken')}`,
 			}
 		);
+		deleteAuthLocalStorage();
+		setIsAuthenticated(false);
 		setIsLoading(false);
 	};
 
 	return (
 		<header className="bg-[#212121] p-4 flex justify-between items-center">
-			<div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+			<div
+				className="flex items-center cursor-pointer"
+				onClick={() => navigate('/')}
+			>
 				<div className="bg-[#D93025] p-2 rounded-lg mr-2">
 					<FaCocktail className="w-6 h-6 text-white" />
 				</div>

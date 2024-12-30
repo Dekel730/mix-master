@@ -1,9 +1,14 @@
-import { del } from './../../client/src/utils/requests';
 import asyncHandler from 'express-async-handler';
 import * as bcrypt from 'bcrypt';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import User, { Device, UserDocument } from '../models/userModel';
+import User, {
+	Device,
+	UserData,
+	UserDisplay,
+	UserDocument,
+	UserSettings,
+} from '../models/userModel';
 import { email_regex, password_regex } from '../utils/regex';
 import { deleteFile, sendEmail } from '../utils/functions';
 import {
@@ -11,22 +16,31 @@ import {
 	deleteUserCommentsAndReplies,
 } from './commentController';
 import { deleteUserPosts } from './postController';
-import { ObjectId } from 'mongoose';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
-import Post from '../models/postModel';
 import { MAX_BIO_LENGTH } from '../utils/consts';
+
+const getUserData = (user: UserDocument): UserData => ({
+	_id: user.id,
+	f_name: user.f_name,
+	l_name: user.l_name,
+	email: user.email,
+	picture: user.picture,
+	createdAt: user.createdAt!,
+	followers: user.followers.length,
+	following: user.following.length,
+});
 
 const createUserLogin = async (
 	res: Response,
 	user: UserDocument,
 	device: Device
 ) => {
-	const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
+	const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
 		expiresIn: '1h',
 	});
 	const refreshToken = jwt.sign(
-		{ id: user._id },
+		{ id: user.id },
 		process.env.JWT_SECRET_REFRESH!
 	);
 	const token = user.tokens.find((t) => t.device_id === device.id);
@@ -64,18 +78,10 @@ const createUserLogin = async (
 			// Add other fields you want to exclude in the array
 		},
 	]);
+	const userData: UserData = getUserData(userEx[0]);
 	res.json({
 		success: true,
-		user: {
-			_id: userEx[0]._id,
-			f_name: userEx[0].f_name,
-			l_name: userEx[0].l_name,
-			email: userEx[0].email,
-			picture: userEx[0].picture,
-			createdAt: userEx[0].createdAt,
-			followers: userEx[0].followers,
-			following: userEx[0].following,
-		},
+		user: userData,
 		accessToken,
 		refreshToken,
 	});
@@ -178,7 +184,7 @@ const register = asyncHandler(
 			sendEmail(
 				email,
 				'Verify your email',
-				`please verify your email: ${process.env.HOST_ADDRESS}/verify/${user._id}`
+				`please verify your email: ${process.env.HOST_ADDRESS}/verify/${user.id}`
 			)
 		);
 		const [userSaved, sent] = await Promise.all(promises);
@@ -194,7 +200,7 @@ const register = asyncHandler(
 const deleteUser = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
 		const user = req.user!;
-		const id = (user._id as ObjectId).toString();
+		const id = user.id;
 		// delete all followers and following
 		let promises: Promise<any>[] = [];
 		promises.push(
@@ -232,7 +238,7 @@ const followUser = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
 		const user = req.user!;
 		const { id } = req.params;
-		if (id === (user._id as ObjectId).toString()) {
+		if (id === user.id) {
 			res.status(400);
 			throw new Error('Cannot follow yourself');
 		}
@@ -251,7 +257,7 @@ const followUser = asyncHandler(
 			User.findByIdAndUpdate(user._id, { $push: { following: id } })
 		);
 		promises.push(
-			User.findByIdAndUpdate(id, { $push: { followers: user._id } })
+			User.findByIdAndUpdate(id, { $push: { followers: user.id } })
 		);
 		await Promise.all(promises);
 		res.json({
@@ -264,7 +270,7 @@ const followUser = asyncHandler(
 const unFollowUser = asyncHandler(async (req: Request, res: Response) => {
 	const user = req.user!;
 	const { id } = req.params;
-	if (id === (user._id as ObjectId).toString()) {
+	if (id === user.id) {
 		res.status(400);
 		throw new Error('Cannot unfollow yourself');
 	}
@@ -312,6 +318,28 @@ const verifyEmail = asyncHandler(
 	}
 );
 
+const getUserDisplay = (
+	userReq: UserDocument,
+	user: UserDocument
+): UserDisplay => {
+	const isSelf = userReq.id === user.id;
+	const isFollowing =
+		userReq.following.find((f) => f.toString() === user.id) !== undefined;
+	return {
+		_id: user.id,
+		picture: user.picture,
+		bio: user.bio,
+		f_name: user.f_name,
+		l_name: user.l_name,
+		email: user.email,
+		createdAt: user.createdAt!,
+		followers: user.followers.length,
+		following: user.following.length,
+		self: isSelf,
+		isFollowing,
+	};
+};
+
 const getUser = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
 		const userReq = req.user!;
@@ -325,47 +353,35 @@ const getUser = asyncHandler(
 			res.status(400);
 			throw new Error('User not verified');
 		}
-		const self = (userReq._id as ObjectId).toString() === id;
-		const isFollowing =
-			userReq.following.find((f) => f.toString() === id) !== undefined;
-
+		const userDisplay = getUserDisplay(userReq, user);
 		res.json({
 			success: true,
-			user: {
-				_id: user._id,
-				picture: user.picture,
-				bio: user.bio,
-				f_name: user.f_name,
-				l_name: user.l_name,
-				email: user.email,
-				createdAt: user.createdAt,
-				followers: user.followers.length,
-				following: user.following.length,
-				self,
-				isFollowing,
-			},
+			user: userDisplay,
 		});
 	}
 );
 
+const getUserSettingsObject = (user: UserDocument): UserSettings => ({
+	f_name: user.f_name,
+	l_name: user.l_name,
+	email: user.email,
+	picture: user.picture,
+	bio: user.bio,
+	devices: user.tokens.map((t) => ({
+		device_id: t.device_id,
+		createdAt: t.createdAt,
+		name: t.name,
+		type: t.type,
+	})),
+});
+
 const getUserSettings = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
 		const user = req.user!;
+		const userSettings = getUserSettingsObject(user);
 		res.json({
 			success: true,
-			user: {
-				f_name: user.f_name,
-				l_name: user.l_name,
-				email: user.email,
-				picture: user.picture,
-				bio: user.bio,
-				devices: user.tokens.map((t) => ({
-					device_id: t.device_id,
-					createdAt: t.createdAt,
-					name: t.name,
-					type: t.type,
-				})),
-			},
+			user: userSettings,
 		});
 	}
 );
@@ -398,7 +414,7 @@ const updateUser = asyncHandler(
 			res.status(400);
 			throw new Error('Bio must be less than 250 characters');
 		}
-		let picture: string | null = user.picture;
+		let picture: string | undefined | null = user.picture;
 		let deletePictureBool = deletePicture === 'true';
 		if (req.file) {
 			if (user.picture) {
@@ -425,19 +441,10 @@ const updateUser = asyncHandler(
 			},
 			{ new: true }
 		);
+		const userData: UserData = getUserData(userUpdated!);
 		res.json({
 			success: true,
-			user: {
-				_id: userUpdated!._id,
-				f_name: userUpdated!.f_name,
-				l_name: userUpdated!.l_name,
-				email: userUpdated!.email,
-				picture: userUpdated!.picture,
-				createdAt: userUpdated!.createdAt,
-				followers: userUpdated!.followers,
-				following: userUpdated!.following,
-				bio: userUpdated!.bio,
-			},
+			user: userData,
 		});
 	}
 );
@@ -560,7 +567,7 @@ const resendEmail = asyncHandler(
 		const sent = await sendEmail(
 			user.email,
 			'Verify your email',
-			`please verify your email: http://localhost:3000/verify/${user._id}`
+			`please verify your email: http://localhost:3000/verify/${user.id}`
 		);
 		res.json({
 			success: true,
@@ -696,7 +703,7 @@ const getUserId = async (email: string): Promise<string> => {
 	if (!user) {
 		return '';
 	}
-	return user._id.toString();
+	return user.id;
 };
 
 export {
