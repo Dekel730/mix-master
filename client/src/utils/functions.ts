@@ -63,7 +63,7 @@ export const deleteAuthLocalStorage = (): void => {
 	localStorage.removeItem('refreshToken');
 	localStorage.removeItem('expiresAt');
 	localStorage.removeItem('user');
-	localStorage.removeItem('isAuthenticated');
+	localStorage.setItem('isAuthenticated', 'false');
 };
 
 export const formatDate = (date: Date): string => {
