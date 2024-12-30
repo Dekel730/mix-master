@@ -1,4 +1,9 @@
 import Comment from '../models/commentModel';
+import asyncHandler from "express-async-handler";
+import { Request, Response, NextFunction } from "express";
+
+
+
 
 const deleteUserCommentsAndReplies = async (userId: string): Promise<void> => {
 	let promises: Promise<any>[] = [];

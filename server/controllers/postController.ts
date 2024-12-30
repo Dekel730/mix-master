@@ -1,25 +1,15 @@
 import asyncHandler from "express-async-handler";
-import { Message } from "./../../client/node_modules/postcss/lib/result.d";
 import { Request, Response, NextFunction } from "express";
-import Post, { PostDocument } from "../models/postModel";
+import Post, {
+    IPost,
+    PostDocument,
+} from "../models/postModel";
 import User from "../models/userModel";
-import Comment from "../models/commentModel";
 
-//! multiple posts - with likes and comments in numbers
-
-// create post
-
-// get feed posts (post of user following)
-
-// get user posts
-
-// delete post
-
-// update post
-
-// like/unlike post
-
-// get post
+interface PostWithCounts extends IPost {
+    likeCount: number;
+    commentCount: number;
+}
 
 const deleteUserPosts = async (userId: string): Promise<PostDocument[]> => {
     const posts = await Post.find({ user: userId });
@@ -27,33 +17,58 @@ const deleteUserPosts = async (userId: string): Promise<PostDocument[]> => {
     return posts;
 };
 
+const postsWithCounts = (posts: PostDocument[]): PostWithCounts[] => {
+    return posts.map((post) => ({
+        ...post.toObject(),
+        likeCount: post.likes.length,
+        commentCount: post.comments.length,
+    }));
+};
+
+const checkRequired = (
+    title: string | undefined,
+    ingredients: string | undefined,
+    instructions: string | undefined,
+    res: Response
+) => {
+    if (!title || !ingredients || !instructions) {
+        res.status(400);
+        throw new Error("Please fill all required fields");
+    }
+
+    const ingredients_object = JSON.parse(ingredients);
+    const instructions_object = JSON.parse(instructions);
+
+    if (!ingredients_object.length || !instructions_object.length) {
+        res.status(400);
+        throw new Error(
+            "Instructions and ingredients must have at least one item"
+        );
+    }
+
+    return [ingredients_object, instructions_object];
+};
+
 // Create Post
 export const createPost = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-        const { title, description, ai } = req.body;
-        let { ingredients, instructions } = req.body;
+        const { title, description, ai, ingredients, instructions } = req.body;
 
-        ingredients = JSON.parse(ingredients);
-        instructions = JSON.parse(instructions);
+        const [ingredients_object, instructions_object] = checkRequired(
+            title,
+            ingredients,
+            instructions,
+            res
+        );
 
-        if (
-            !title ||
-            !ingredients ||
-            !ingredients.length ||
-            !instructions ||
-            !instructions.length
-        ) {
-            res.status(400);
-            throw new Error("Please fill all required fields");
-        }
         const user = req.user!;
         const userId = user._id;
 
         const newPost = await Post.create({
             title,
             description,
-            ingredients,
-            instructions,
+            ingredients: ingredients_object,
+            instructions: instructions_object,
             user: userId,
             ai,
         });
@@ -68,7 +83,7 @@ export const createPost = asyncHandler(
 // Get Feed Posts (posts of users the user is following)
 export const getFeedPosts = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-        const userId = req.user!._id;
+        const userId = req.user!.id;
 
         const user = await User.findById(userId).select("following");
         const followingIds = user?.following || [];
@@ -78,146 +93,139 @@ export const getFeedPosts = asyncHandler(
             .populate("user", "username")
             .exec();
 
-        const postsWithCounts = await Promise.all(
-            feedPosts.map(async (post) => ({
-                ...post.toObject(),
-                likeCount: post.likes.length,
-                commentCount: post.comments.length,
-            }))
-        );
+        const posts = postsWithCounts(feedPosts);
 
         res.status(200).json({
             success: true,
-            posts: postsWithCounts,
+            posts,
         });
     }
 );
 
 // Get User Posts
-export const getUserPosts = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    const { userId } = req.params;
+export const getUserPosts = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const userId = req.user!._id;
 
-    const userPosts = await Post.find({ user: userId })
-        .sort({ createdAt: -1 })
-        .exec();
+        const userPosts = await Post.find({ user: userId })
+            .sort({ createdAt: -1 })
+            .exec();
 
-    const postsWithCounts = userPosts.map((post) => ({
-        ...post.toObject(),
-        likeCount: post.likes.length,
-        commentCount: post.comments.length,
-    }));
+        const posts = postsWithCounts(userPosts);
 
-    res.status(200).json({
-        success: true,
-        posts: postsWithCounts,
-    });
-};
+        res.status(200).json({
+            success: true,
+            posts,
+        });
+    }
+);
 
 // Delete Post
-export const deletePost = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    const { postId } = req.params;
+export const deletePost = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const { postId } = req.params;
 
-    const deletedPost = await Post.findByIdAndDelete(postId).exec();
-    if (!deletedPost) throw new Error("Post not found");
+        const post = await Post.findById(postId);
+        if (!post) {
+            res.status(404);
+            throw new Error("post not found");
+        }
 
-    // res.status(200).json({ message: "Post deleted successfully" });
-    res.status(200).json({
-        success: true,
-        post: deletedPost,
-    });
-};
+        await Post.findByIdAndUpdate(postId);
+
+        res.status(200).json({
+            success: true,
+            message: "post deleted successfully",
+        });
+    }
+);
 
 // Update Post
-export const updatePost = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    const { postId } = req.params;
-    const { title, description, picture, ingredients, instructions } = req.body;
+export const updatePost = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const { postId } = req.params;
+        const { title, description, ingredients, instructions } = req.body;
 
-    const updatedPost = await Post.findByIdAndUpdate(
-        postId,
-        { title, description, picture, ingredients, instructions },
-        { new: true }
-    ).exec();
+        const [ingredients_object, instructions_object] = checkRequired(
+            title,
+            ingredients,
+            instructions,
+            res
+        );
 
-    if (!updatedPost) {
-        res.status(404);
-        throw new Error("Post not found");
+        const post = await Post.findById(postId);
+
+        if (!post) {
+            res.status(404);
+            throw new Error("Post not found");
+        }
+
+        post.title = title;
+        post.description = description;
+        post.ingredients = ingredients_object;
+        post.instructions = instructions_object;
+
+        await post.save();
+
+        res.status(200).json({
+            success: true,
+            post,
+        });
     }
-
-    //res.status(200).json(updatedPost);
-    res.status(200).json({
-        success: true,
-        post: updatedPost,
-    });
-};
+);
 
 // Like/Unlike Post
-export const likePost = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    const { postId } = req.params;
-    const user = req.user!;
-    const userId = user.id;
+export const likePost = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const { postId } = req.params;
+        const user = req.user!;
+        const userId = req.user!.id;
 
-    const post = await Post.findById(postId);
-    if (!post){
-		res.status(404);
-		throw new Error("Post not exist");
-	} 
+        const post = await Post.findById(postId);
 
-    if (post.likes.includes(userId)) {
-        // Unlike the post
-        post.likes = post.likes.filter((id) => id.toString() !== userId);
-    } else {
-        // Like the post
-        post.likes.push(userId);
+        if (!post) {
+            res.status(404);
+            throw new Error("Post not exist");
+        }
+
+        if (post.likes.includes(userId)) {
+            // Unlike the post
+            post.likes = post.likes.filter((id) => id.toString() !== userId);
+        } else {
+            // Like the post
+            post.likes.push(userId);
+        }
+
+        await post.save();
+
+        res.status(200).json({
+            success: true,
+            post: likePost.length,
+        });
     }
-
-    await post.save();
-
-    //res.status(200).json({ likeCount: post.likes.length });
-    res.status(200).json({
-        success: true,
-        post: likePost.length,
-    });
-};
+);
 
 // Get Post (with like and comment counts)
-export const getPost = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    const { postId } = req.params;
+export const getPost = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+        const { postId } = req.params;
 
-    const post = await Post.findById(postId)
-        .populate("user", "username")
-        .populate("comments", "content user createdAt") // Assumes Comment model has fields like this
-        .exec();
+        const post = await Post.findById(postId)
+            .populate("user", "username")
+            .populate("comments", "content user createdAt")
+            .exec();
 
-    if (!post){
-		res.status(404);
-		throw new Error("Post not found");
-	} 
+        if (!post) {
+            res.status(404);
+            throw new Error("Post not found");
+        }
 
-    res.status(200).json({
-        ...post.toObject(),
-        likeCount: post.likes.length,
-        commentCount: post.comments.length,
-    });
-};
+        res.status(200).json({
+            ...post.toObject(),
+            likeCount: post.likes.length,
+            commentCount: post.comments.length,
+        });
+    }
+);
 
 export { deleteUserPosts };

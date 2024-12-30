@@ -15,9 +15,9 @@ const router = express.Router();
 
 router.post("/", authUser, upload.single("picture"), createPost);
 router.get("/", authUser, getFeedPosts);
-router.get("/:userId", authUser, getUserPosts);
+router.get("/user/:userId", authUser, getUserPosts);
 router.delete("/:postId", authUser, deletePost);
-router.put("/:postId", authUser, updatePost);
+router.put("/:postId", authUser, upload.single("picture"), updatePost);
 router.post("/:postId/like", authUser, likePost);
 router.get("/:postId", authUser, getPost);
 
