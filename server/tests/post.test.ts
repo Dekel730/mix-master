@@ -1,7 +1,6 @@
-import { fields } from "./../../client/node_modules/@hookform/resolvers/ajv/src/__tests__/__fixtures__/data";
 import request from "supertest";
 import app from "../server";
-import { beforeAll, describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from "@jest/globals";
 
 process.env.NODE_ENV = "test";
 var refresh_token: string;

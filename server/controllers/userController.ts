@@ -19,9 +19,10 @@ import { deleteUserPosts } from './postController';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
 import { MAX_BIO_LENGTH } from '../utils/consts';
+import { ObjectId } from 'mongoose';
 
 const getUserData = (user: UserDocument): UserData => ({
-	_id: user.id,
+	_id: (user._id as ObjectId).toString(),
 	f_name: user.f_name,
 	l_name: user.l_name,
 	email: user.email,
@@ -63,22 +64,7 @@ const createUserLogin = async (
 		});
 	}
 	await user.save();
-	const userEx: UserDocument[] = await User.aggregate([
-		{
-			$match: { _id: user._id },
-		},
-		{
-			$addFields: {
-				followers: { $size: '$followers' }, // Compute the length of 'followers' array
-				following: { $size: '$following' }, // Compute the length of 'following' array
-			},
-		},
-		{
-			$unset: ['password', '__v', 'resetPasswordToken'], // Exclude 'password' and '__v' fields
-			// Add other fields you want to exclude in the array
-		},
-	]);
-	const userData: UserData = getUserData(userEx[0]);
+	const userData: UserData = getUserData(user);
 	res.json({
 		success: true,
 		user: userData,
@@ -129,7 +115,7 @@ const login = asyncHandler(
 			res.status(400);
 			throw new Error('Invalid email or password');
 		}
-		createUserLogin(res, user, device);
+		await createUserLogin(res, user, device);
 	}
 );
 
@@ -630,13 +616,13 @@ const googleLogin = asyncHandler(
 				isVerified: true,
 			});
 			await newUser.save();
-			createUserLogin(res, newUser, device);
+			await createUserLogin(res, newUser, device);
 		} else {
 			if (!user.isVerified) {
 				user.isVerified = true;
 				await user.save();
 			}
-			createUserLogin(res, user, device);
+			await createUserLogin(res, user, device);
 		}
 	}
 );

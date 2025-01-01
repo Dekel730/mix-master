@@ -1,35 +1,35 @@
-import { FieldErrors, FieldValues, UseFormRegister } from 'react-hook-form';
+import {
+	FieldErrors,
+	FieldValues,
+	Path,
+	UseFormRegister,
+} from 'react-hook-form';
 
-interface TextAreaProps {
-	field: string;
-	register: UseFormRegister<FieldValues>;
+interface TextAreaProps<TFieldValues extends FieldValues> {
+	field: Path<TFieldValues>;
+	register: UseFormRegister<TFieldValues>;
 	classNames?: string;
 	containerClassNames?: string;
 	label?: string;
-	errors: FieldErrors<FieldValues>;
+	errors: FieldErrors<TFieldValues>;
 	defaultValue?: string;
 	placeHolder: string;
 	StartIcon?: React.ElementType;
 	children?: React.ReactNode;
 }
 
-const TextArea = ({
+const TextArea = <TFieldValues extends FieldValues>({
 	field,
 	register,
 	errors,
-	label,
-	classNames,
-	containerClassNames,
-	defaultValue,
+	label = '',
+	classNames = '',
+	containerClassNames = '',
+	defaultValue = '',
 	placeHolder,
 	StartIcon,
 	children,
-}: TextAreaProps) => {
-	classNames = classNames || '';
-	label = label || '';
-	containerClassNames = containerClassNames || '';
-	defaultValue = defaultValue || '';
-
+}: TextAreaProps<TFieldValues>) => {
 	return (
 		<div className={`space-y-2 ${containerClassNames}`}>
 			<label htmlFor={field} className="text-sm text-gray-400">
@@ -37,7 +37,7 @@ const TextArea = ({
 			</label>
 			<div className="relative">
 				<textarea
-					{...register(field)}
+					{...register(field)} // Correctly typed using Path<TFieldValues>
 					id={field}
 					placeholder={placeHolder}
 					defaultValue={defaultValue}
@@ -53,9 +53,7 @@ const TextArea = ({
 				{children}
 			</div>
 			<span className="text-red-500 text-sm">
-				{errors[field] &&
-					typeof errors[field].message === 'string' &&
-					errors[field].message}
+				{errors[field]?.message?.toString()}
 			</span>
 		</div>
 	);
