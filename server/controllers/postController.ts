@@ -172,7 +172,7 @@ export const createWithAI = asyncHandler(
 			ingredients_object = [];
 		}
 		const model = genAI.getGenerativeModel({
-			model: 'gemini-2.0-flash',
+			model: 'gemini-1.5-flash',
 			generationConfig: {
 				responseMimeType: 'application/json',
 				responseSchema: {
@@ -193,12 +193,15 @@ export const createWithAI = asyncHandler(
 							},
 						},
 						instructions: {
-							type: SchemaType.OBJECT,
-							properties: {
-								title: { type: SchemaType.STRING },
-								steps: {
-									type: SchemaType.ARRAY,
-									items: { type: SchemaType.STRING },
+							type: SchemaType.ARRAY,
+							items: {
+								type: SchemaType.OBJECT,
+								properties: {
+									title: { type: SchemaType.STRING },
+									steps: {
+										type: SchemaType.ARRAY,
+										items: { type: SchemaType.STRING },
+									},
 								},
 							},
 						},
@@ -211,8 +214,44 @@ export const createWithAI = asyncHandler(
 		)} in ${language} language in JSON format`;
 		const result = await model.generateContent(prompt);
 
-		console.log(result.response.text());
-		const resultJSON = JSON.parse(result.response.text());
+		const resultJSON: IPost = JSON.parse(result.response.text());
+
+		// check if the result is valid
+
+		if (
+			!resultJSON.title ||
+			!resultJSON.ingredients ||
+			!resultJSON.instructions
+		) {
+			res.status(400);
+			throw new Error('Failed to generate cocktail');
+		}
+
+		if (!resultJSON.ingredients.length || !resultJSON.instructions.length) {
+			res.status(400);
+			throw new Error('Failed to generate cocktail');
+		}
+
+		if (
+			!resultJSON.ingredients.every(
+				(ingredient: Ingredient) => ingredient.name
+			)
+		) {
+			res.status(400);
+			throw new Error('Failed to generate cocktail');
+		}
+
+		if (
+			!resultJSON.instructions.every(
+				(instruction: Instructions) =>
+					instruction.title &&
+					instruction.steps.length &&
+					instruction.steps.every((step) => step)
+			)
+		) {
+			res.status(400);
+			throw new Error('Failed to generate cocktail');
+		}
 
 		res.status(200).json({
 			success: true,
@@ -286,7 +325,6 @@ export const updatePost = asyncHandler(
 			description,
 			ingredients,
 			instructions,
-			deletedImages,
 		}: {
 			title: string;
 			description: string;
@@ -295,11 +333,17 @@ export const updatePost = asyncHandler(
 			deletedImages: string[];
 		} = req.body;
 
+		let { deletedImages }: { deletedImages: string[] } = req.body;
+
 		let images: string[] = [];
 		if (req.files) {
 			images = (req.files as Express.Multer.File[]).map(
 				(file: Express.Multer.File) => file.path
 			);
+		}
+
+		if (!deletedImages) {
+			deletedImages = [];
 		}
 
 		const { ingredients_object, instructions_object } = checkRequired(

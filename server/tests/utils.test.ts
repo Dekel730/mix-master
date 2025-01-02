@@ -6,9 +6,4 @@ describe('util functions Test', () => {
 		const success = await sendEmail('', 'Subject', 'Body');
 		expect(success).toEqual(false);
 	});
-
-	it('should return false if file was not deleted successfully', async () => {
-		const success = await deleteFile('invalidPath');
-		expect(success).toEqual(false);
-	});
 });

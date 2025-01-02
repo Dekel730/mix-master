@@ -1,0 +1,25 @@
+meta {
+  name: ai
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:3000/api/post/ai
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NjFmNTFjZmIxNTBkZjkyN2U3MzI0MSIsImlhdCI6MTczNTgyMzQ0MywiZXhwIjoxNzM1ODI3MDQzfQ.MlSzcPprST-1-aH6moT0sTBMKNFUFMs2YLvuah0A4fo
+}
+
+body:json {
+  {
+    "language": "עברית",
+    "difficulty": "easy",
+    "ingredients": [
+      "gin"
+    ]
+  }
+}
