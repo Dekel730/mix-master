@@ -8,12 +8,14 @@ import {
 	updatePost,
 	likePost,
 	getPost,
+	createWithAI,
 } from '../controllers/postController';
 import upload from '../config/storage';
 
 const router = express.Router();
 
 router.post('/', authUser, upload.array('images', 10), createPost);
+router.post('/ai', authUser, createWithAI);
 router.get('/', authUser, getFeedPosts);
 router.get('/user/:userId', authUser, getUserPosts);
 router.delete('/:postId', authUser, deletePost);

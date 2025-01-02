@@ -140,7 +140,7 @@ const UserProfile = () => {
 		<main>
 			<div className="min-h-screen bg-zinc-900 text-white p-4">
 				<div className="max-w-6xl mx-auto">
-					<div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+					<div className="bg-[#212121] rounded-lg border border-zinc-700 p-6">
 						<div className="flex gap-4 flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-zinc-700">
 							<div className="flex items-center space-x-4">
 								<h1 className="text-2xl font-bold">

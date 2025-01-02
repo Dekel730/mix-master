@@ -57,6 +57,7 @@ describe('User routes Test', () => {
 			.field('email', 'invalidMail')
 			.field('f_name', user.f_name)
 			.field('l_name', user.l_name)
+			.field('gender', 'Male')
 			.field('password', user.password)
 			.attach('picture', './tests/assets/test.jpeg');
 		expect(res.statusCode).toEqual(400);
@@ -67,6 +68,7 @@ describe('User routes Test', () => {
 			.post('/api/user/register')
 			.field('password', '123')
 			.field('email', user.email)
+			.field('gender', 'Male')
 			.field('f_name', user.f_name)
 			.field('l_name', user.l_name)
 			.attach('picture', './tests/assets/test.jpeg');
@@ -78,6 +80,7 @@ describe('User routes Test', () => {
 			.post('/api/user/register')
 			.field('f_name', user.f_name)
 			.field('l_name', user.l_name)
+			.field('gender', 'Male')
 			.field('email', process.env.TEST_EMAIL_USER_1!)
 			.field('password', user.password)
 			.attach('picture', './tests/assets/test.jpeg');
@@ -90,6 +93,7 @@ describe('User routes Test', () => {
 			.field('f_name', user.f_name)
 			.field('l_name', user.l_name)
 			.field('email', user.email)
+			.field('gender', 'Male')
 			.field('password', user.password)
 			.attach('picture', './tests/assets/test.jpeg');
 		expect(res.statusCode).toEqual(201);
@@ -283,6 +287,7 @@ describe('User routes Test', () => {
 			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', '')
 			.field('l_name', '')
+			.field('gender', 'Male')
 			.attach('picture', './tests/assets/test.jpeg');
 		expect(res.statusCode).toEqual(400);
 	});
@@ -293,6 +298,7 @@ describe('User routes Test', () => {
 			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', 'John')
 			.field('l_name', 'Smith')
+			.field('gender', 'Male')
 			.field('bio', 'a'.repeat(MAX_BIO_LENGTH + 1))
 			.attach('picture', './tests/assets/test.jpeg');
 		expect(res.statusCode).toEqual(400);
@@ -304,6 +310,7 @@ describe('User routes Test', () => {
 			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', 'John')
 			.field('l_name', 'Smith')
+			.field('gender', 'Male')
 			.field('deletePicture', true)
 			.attach('picture', './tests/assets/test.jpeg');
 		expect(res.statusCode).toEqual(200);
@@ -316,6 +323,7 @@ describe('User routes Test', () => {
 			.set('Authorization', `Bearer ${accessToken2}`)
 			.field('f_name', 'John')
 			.field('l_name', 'Smith')
+			.field('gender', 'Male')
 			.attach('picture', './tests/assets/test.jpeg');
 		expect(res.statusCode).toEqual(200);
 		expect(res.body.user.l_name).toEqual('Smith');
