@@ -407,10 +407,6 @@ export default function CreateCocktail() {
 											instructionsFieldArray.replace(
 												currentInstructions
 											); // Force update
-											console.log(
-												'Updated instructions:',
-												watch('instructions')
-											);
 										}}
 										className="text-red-500 mt-2"
 									>
@@ -422,7 +418,6 @@ export default function CreateCocktail() {
 						<button
 							type="button"
 							onClick={() => {
-								console.log('Button clicked');
 								instructionsFieldArray.append({
 									title: '',
 									steps: [
