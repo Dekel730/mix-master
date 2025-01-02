@@ -13,7 +13,6 @@ const post = {
         {
             name: "Test Ingredient",
             amount: "1 cup",
-            ingredient: [],
         },
     ],
     instructions: [
@@ -112,7 +111,7 @@ describe("posts test", () => {
 
         expect(res.statusCode).toEqual(404);
     });
-
+//like post
     it("should return 200 if the post was like successfully", async () => {
         const res = await request(app)
             .post(`/api/post/${postId}/like`)
