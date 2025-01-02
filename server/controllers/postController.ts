@@ -9,6 +9,7 @@ import Post, {
 import User from '../models/userModel';
 import { POSTS_PAGE_SIZE } from '../utils/consts';
 import { deleteFileFromPath } from '../utils/functions';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 interface PostWithCounts extends IPost {
 	likeCount: number;
@@ -152,6 +153,70 @@ export const getFeedPosts = asyncHandler(
 			posts,
 			count,
 			pages,
+		});
+	}
+);
+
+export const createWithAI = asyncHandler(
+	async (req: Request, res: Response, next: NextFunction) => {
+		const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+		const { language, difficulty, ingredients } = req.body;
+		let ingredients_object = ingredients;
+
+		if (!language || !difficulty) {
+			res.status(400);
+			throw new Error('Please fill all required fields');
+		}
+
+		if (!ingredients) {
+			ingredients_object = [];
+		}
+		const model = genAI.getGenerativeModel({
+			model: 'gemini-2.0-flash',
+			generationConfig: {
+				responseMimeType: 'application/json',
+				responseSchema: {
+					type: SchemaType.OBJECT,
+					properties: {
+						title: { type: SchemaType.STRING },
+						description: { type: SchemaType.STRING },
+						ingredients: {
+							type: SchemaType.ARRAY,
+							items: {
+								type: SchemaType.OBJECT,
+								properties: {
+									name: { type: SchemaType.STRING },
+									amount: {
+										type: SchemaType.STRING,
+									},
+								},
+							},
+						},
+						instructions: {
+							type: SchemaType.OBJECT,
+							properties: {
+								title: { type: SchemaType.STRING },
+								steps: {
+									type: SchemaType.ARRAY,
+									items: { type: SchemaType.STRING },
+								},
+							},
+						},
+					},
+				},
+			},
+		});
+		const prompt = `Create a cocktail recipe that is ${difficulty} difficulty level and includes ${ingredients_object.join(
+			', '
+		)} in ${language} language in JSON format`;
+		const result = await model.generateContent(prompt);
+
+		console.log(result.response.text());
+		const resultJSON = JSON.parse(result.response.text());
+
+		res.status(200).json({
+			success: true,
+			post: resultJSON,
 		});
 	}
 );
