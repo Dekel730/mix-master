@@ -9,7 +9,7 @@ const Spinner = () => {
 			y="0px"
 			className="w-6 h-6"
 			viewBox="0 0 100 100"
-			enable-background="new 0 0 0 0"
+			enableBackground="new 0 0 0 0"
 			xmlSpace="preserve"
 		>
 			<path
