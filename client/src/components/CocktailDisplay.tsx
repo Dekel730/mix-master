@@ -85,7 +85,7 @@ const CocktailDisplay = ({ cocktail, likeUnlike }: CocktailDisplayProps) => {
 		setIsLoading(false);
 	};
 	return (
-		<div className="bg-zinc-800 rounded-lg border border-zinc-700">
+		<div className="bg-[#212121] rounded-lg border border-zinc-700">
 			<div className="p-4 flex items-center">
 				<div
 					onClick={gotoUserProfile}

@@ -21,12 +21,19 @@ import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import { authPost } from '../utils/requests';
 import { useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 interface IForm {
 	title: string;
 	description: string;
 	ingredients: { name: string; amount: string }[];
-	instructions: { title: string; steps: string[] }[];
+	instructions: {
+		title: string;
+		steps: {
+			step: string;
+			id: string;
+		}[];
+	}[];
 }
 
 interface UploadedImage {
@@ -75,10 +82,13 @@ export default function CreateCocktail() {
 					title: z.string().nonempty('Instruction title is required'),
 					steps: z
 						.array(
-							z
-								.string()
-								.nonempty('Step content is required')
-								.max(200, 'Step is too long')
+							z.object({
+								step: z
+									.string()
+									.nonempty('Step content is required')
+									.max(200, 'Step is too long'),
+								id: z.string(),
+							})
 						)
 						.min(1, 'At least one step is required'),
 				})
@@ -99,7 +109,17 @@ export default function CreateCocktail() {
 			title: '',
 			description: '',
 			ingredients: [{ name: '', amount: '' }],
-			instructions: [{ title: '', steps: [''] }],
+			instructions: [
+				{
+					title: '',
+					steps: [
+						{
+							step: '',
+							id: uuidv4(),
+						},
+					],
+				},
+			],
 		},
 	});
 
@@ -143,7 +163,25 @@ export default function CreateCocktail() {
 		formData.append('title', data.title);
 		formData.append('description', data.description);
 		formData.append('ingredients', JSON.stringify(data.ingredients));
-		formData.append('instructions', JSON.stringify(data.instructions));
+		formData.append(
+			'instructions',
+			JSON.stringify(
+				data.instructions.map(
+					(instruction: {
+						title: string;
+						steps: { step: string; id: string }[];
+					}) => {
+						return {
+							title: instruction.title,
+							steps: instruction.steps.map(
+								(step: { step: string; id: string }) =>
+									step.step
+							),
+						};
+					}
+				)
+			)
+		);
 		uploadedImages.forEach((image) => {
 			formData.append('images', image.file);
 		});
@@ -288,9 +326,9 @@ export default function CreateCocktail() {
 									<div>
 										{watch(
 											`instructions.${instructionIndex}.steps`
-										)?.map((_, stepIndex) => (
+										)?.map((step, stepIndex) => (
 											<div
-												key={stepIndex}
+												key={step.id}
 												className="flex gap-1 mb-2"
 											>
 												<TextArea<IForm>
@@ -300,7 +338,7 @@ export default function CreateCocktail() {
 													containerClassNames="flex-1 justify-center"
 													height="h-12"
 													classNames="p-0 pb-0"
-													field={`instructions.${instructionIndex}.steps.${stepIndex}`}
+													field={`instructions.${instructionIndex}.steps.${stepIndex}.step`}
 													placeholder={`Step ${
 														stepIndex + 1
 													}`}
@@ -311,7 +349,10 @@ export default function CreateCocktail() {
 													onClick={() => {
 														const steps = watch(
 															`instructions.${instructionIndex}.steps`
-														) as string[];
+														) as {
+															step: string;
+															id: string;
+														}[];
 														steps.splice(
 															stepIndex,
 															1
@@ -332,10 +373,19 @@ export default function CreateCocktail() {
 											onClick={() => {
 												const steps = watch(
 													`instructions.${instructionIndex}.steps`
-												) as string[];
+												) as {
+													step: string;
+													id: string;
+												}[];
 												setValue(
 													`instructions.${instructionIndex}.steps`,
-													[...steps, '']
+													[
+														...steps,
+														{
+															step: '',
+															id: uuidv4(),
+														},
+													]
 												);
 											}}
 											className="mt-2 bg-[#333333] text-white px-4 py-2 rounded-lg flex items-center"
@@ -346,11 +396,22 @@ export default function CreateCocktail() {
 
 									<button
 										type="button"
-										onClick={() =>
-											instructionsFieldArray.remove(
-												instructionIndex
-											)
-										}
+										onClick={() => {
+											const currentInstructions = [
+												...watch('instructions'),
+											];
+											currentInstructions.splice(
+												instructionIndex,
+												1
+											); // Remove the instruction
+											instructionsFieldArray.replace(
+												currentInstructions
+											); // Force update
+											console.log(
+												'Updated instructions:',
+												watch('instructions')
+											);
+										}}
 										className="text-red-500 mt-2"
 									>
 										Remove Instruction
@@ -360,12 +421,18 @@ export default function CreateCocktail() {
 						)}
 						<button
 							type="button"
-							onClick={() =>
+							onClick={() => {
+								console.log('Button clicked');
 								instructionsFieldArray.append({
 									title: '',
-									steps: [''],
-								})
-							}
+									steps: [
+										{
+											step: '',
+											id: uuidv4(),
+										},
+									],
+								});
+							}}
 							className="mt-2 bg-[#2a2a2a] text-white px-4 py-2 rounded-lg flex items-center"
 						>
 							<FaPlus className="mr-2" /> Add Instruction
