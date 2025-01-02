@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import {
 	FieldErrors,
 	FieldValues,
@@ -13,9 +14,11 @@ interface TextAreaProps<TFieldValues extends FieldValues> {
 	label?: string;
 	errors: FieldErrors<TFieldValues>;
 	defaultValue?: string;
-	placeHolder: string;
+	placeholder: string;
 	StartIcon?: React.ElementType;
 	children?: React.ReactNode;
+	height?: string;
+	autoExpand?: boolean;
 }
 
 const TextArea = <TFieldValues extends FieldValues>({
@@ -26,10 +29,21 @@ const TextArea = <TFieldValues extends FieldValues>({
 	classNames = '',
 	containerClassNames = '',
 	defaultValue = '',
-	placeHolder,
+	placeholder,
 	StartIcon,
 	children,
+	height = 'h-32',
+	autoExpand = false,
 }: TextAreaProps<TFieldValues>) => {
+	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+
+	const handleInput = () => {
+		if (textAreaRef.current && autoExpand) {
+			textAreaRef.current.style.height = 'auto'; // Reset height to calculate correctly
+			textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; // Set new height
+		}
+	};
+
 	return (
 		<div className={`space-y-2 ${containerClassNames}`}>
 			<label htmlFor={field} className="text-sm text-gray-400">
@@ -38,12 +52,17 @@ const TextArea = <TFieldValues extends FieldValues>({
 			<div className="relative">
 				<textarea
 					{...register(field)} // Correctly typed using Path<TFieldValues>
+					ref={(instance) => {
+						textAreaRef.current = instance; // Attach ref
+						register(field).ref(instance); // Register with react-hook-form
+					}}
+					onInput={handleInput}
 					id={field}
-					placeholder={placeHolder}
+					placeholder={placeholder}
 					defaultValue={defaultValue}
 					className={`w-full bg-[#1a1a1a] ${
 						errors[field] ? 'ring-2 ring-red-500' : ''
-					} text-white h-32 rounded-xl pl-10 pr-4 pt-3 pb-8 outline-none focus:ring-2 focus:${
+					} text-white ${height} rounded-xl pl-10 pr-4 pt-3 pb-8 outline-none focus:ring-2 focus:${
 						errors[field] ? 'ring-red-500' : 'ring-gray-500'
 					} transition-all resize-none ${classNames}`}
 				/>

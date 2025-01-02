@@ -36,16 +36,15 @@ const Input = <TFieldValues extends FieldValues>({
 		if (field.includes('.')) {
 			const split = field.split('.');
 			const count = split.length;
-			let error = errors;
+			let error: FieldErrors<TFieldValues> | undefined = errors;
 			for (let i = 0; i < count; i++) {
 				let key;
 				if (!isNaN(parseInt(split[i]))) {
-					console.log(split[i]);
 					key = Number(split[i]);
 				} else {
 					key = split[i];
 				}
-				error = error[key];
+				error = error[key] as FieldErrors<TFieldValues>;
 				if (!error) {
 					return null;
 				}
@@ -62,7 +61,7 @@ const Input = <TFieldValues extends FieldValues>({
 			</label>
 			<div className="relative">
 				<input
-					{...register(field)} // No casting needed; field is correctly typed as Path<TFieldValues>
+					{...register(field)}
 					id={field}
 					type={inputType}
 					placeholder={placeholder}

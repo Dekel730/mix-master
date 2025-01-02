@@ -17,6 +17,17 @@ import { BiSolidFoodMenu } from 'react-icons/bi';
 import { AiOutlineNumber } from 'react-icons/ai';
 import { MdTitle } from 'react-icons/md';
 import { PiStepsFill } from 'react-icons/pi';
+import { toast } from 'react-toastify';
+import Loader from '../components/Loader';
+import { authPost } from '../utils/requests';
+import { useNavigate } from 'react-router-dom';
+
+interface IForm {
+	title: string;
+	description: string;
+	ingredients: { name: string; amount: string }[];
+	instructions: { title: string; steps: string[] }[];
+}
 
 interface UploadedImage {
 	id: string;
@@ -25,9 +36,12 @@ interface UploadedImage {
 }
 
 export default function CreateCocktail() {
+	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 	const [previewImage, setPreviewImage] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	const navigate = useNavigate();
 
 	const cocktailSchema = z.object({
 		title: z
@@ -110,10 +124,10 @@ export default function CreateCocktail() {
 				preview: URL.createObjectURL(file),
 			}));
 			setUploadedImages([...uploadedImages, ...newImages]);
+			// reset file input
+			event.target.value = '';
 		}
 	};
-
-	console.log(errors);
 
 	const deleteImage = (id: string) => {
 		setUploadedImages(uploadedImages.filter((img) => img.id !== id));
@@ -123,9 +137,44 @@ export default function CreateCocktail() {
 		setPreviewImage(preview);
 	};
 
-	const onSubmit = (data: FieldValues) => {
-		console.log(data);
+	const onSubmit = async (data: FieldValues) => {
+		setIsLoading(true);
+		const formData = new FormData();
+		formData.append('title', data.title);
+		formData.append('description', data.description);
+		formData.append('ingredients', JSON.stringify(data.ingredients));
+		formData.append('instructions', JSON.stringify(data.instructions));
+		uploadedImages.forEach((image) => {
+			formData.append('images', image.file);
+		});
+		await authPost(
+			'/post',
+			formData,
+			(message) => {
+				toast.error(message);
+			},
+			(data) => {
+				toast.success('Cocktail created successfully');
+				navigate(`/cocktail/${data.post._id}`);
+			},
+			{
+				'Content-Type': 'multipart/form-data',
+			}
+		);
+		setIsLoading(false);
 	};
+
+	const addImage = () => {
+		if (uploadedImages.length >= 10) {
+			toast.info('You can only upload up to 10 images');
+			return;
+		}
+		fileInputRef.current?.click();
+	};
+
+	if (isLoading) {
+		return <Loader />;
+	}
 
 	return (
 		<main className="bg-[#121212]">
@@ -148,13 +197,13 @@ export default function CreateCocktail() {
 						containerClassNames="mb-4"
 					/>
 
-					<TextArea
+					<TextArea<IForm>
 						register={register}
 						errors={errors}
 						containerClassNames="mb-4"
 						label="Description"
 						field="description"
-						placeHolder="Describe your cocktail..."
+						placeholder="Describe your cocktail..."
 						StartIcon={FaInfoCircle}
 					>
 						<div className="absolute right-4 bottom-2 text-sm text-gray-400">
@@ -166,6 +215,9 @@ export default function CreateCocktail() {
 						<label className="block text-sm font-medium text-gray-400 mb-2">
 							Ingredients
 						</label>
+						<span className="text-red-500 text-sm">
+							{errors.ingredients?.root?.message?.toString()}
+						</span>
 						{ingredientsFieldArray.fields.map((field, index) => (
 							<div
 								key={field.id}
@@ -216,6 +268,9 @@ export default function CreateCocktail() {
 						<label className="block text-sm font-medium text-gray-400 mb-2">
 							Instructions
 						</label>
+						<span className="text-red-500 text-sm">
+							{errors.instructions?.root?.message?.toString()}
+						</span>
 						{instructionsFieldArray.fields.map(
 							(instruction, instructionIndex) => (
 								<div
@@ -236,11 +291,15 @@ export default function CreateCocktail() {
 										)?.map((_, stepIndex) => (
 											<div
 												key={stepIndex}
-												className="relative mb-2"
+												className="flex gap-1 mb-2"
 											>
-												<Input
+												<TextArea<IForm>
 													register={register}
 													errors={errors}
+													autoExpand={true}
+													containerClassNames="flex-1 justify-center"
+													height="h-12"
+													classNames="p-0 pb-0"
 													field={`instructions.${instructionIndex}.steps.${stepIndex}`}
 													placeholder={`Step ${
 														stepIndex + 1
@@ -262,7 +321,7 @@ export default function CreateCocktail() {
 															steps
 														);
 													}}
-													className="absolute right-3 bottom-2 text-sm text-gray-400"
+													className="text-red-500 h-12 mt-2"
 												>
 													<FaTrash />
 												</button>
@@ -349,7 +408,7 @@ export default function CreateCocktail() {
 							))}
 							<button
 								type="button"
-								onClick={() => fileInputRef.current?.click()}
+								onClick={addImage}
 								className="w-24 h-24 bg-[#2a2a2a] text-white rounded-lg flex items-center justify-center hover:bg-[#333333] transition-colors"
 							>
 								<FaPlus />

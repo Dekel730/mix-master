@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import Post, { IPost, PostDocument } from '../models/postModel';
 import User from '../models/userModel';
 import { POSTS_PAGE_SIZE } from '../utils/consts';
+import { deleteFileFromPath } from '../utils/functions';
 
 interface PostWithCounts extends IPost {
 	likeCount: number;
@@ -51,6 +52,12 @@ const checkRequired = (
 export const createPost = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction) => {
 		const { title, description, ai, ingredients, instructions } = req.body;
+		let images: string[] = [];
+		if (req.files) {
+			images = (req.files as Express.Multer.File[]).map(
+				(file: Express.Multer.File) => file.path
+			);
+		}
 
 		const [ingredients_object, instructions_object] = checkRequired(
 			title,
@@ -64,6 +71,7 @@ export const createPost = asyncHandler(
 
 		const newPost = await Post.create({
 			title,
+			images,
 			description,
 			ingredients: ingredients_object,
 			instructions: instructions_object,
@@ -172,7 +180,15 @@ export const deletePost = asyncHandler(
 export const updatePost = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction) => {
 		const { postId } = req.params;
-		const { title, description, ingredients, instructions } = req.body;
+		const { title, description, ingredients, instructions, deletedImages } =
+			req.body;
+
+		let images: string[] = [];
+		if (req.files) {
+			images = (req.files as Express.Multer.File[]).map(
+				(file: Express.Multer.File) => file.path
+			);
+		}
 
 		const [ingredients_object, instructions_object] = checkRequired(
 			title,
@@ -197,6 +213,15 @@ export const updatePost = asyncHandler(
 		post.description = description;
 		post.ingredients = ingredients_object;
 		post.instructions = instructions_object;
+		post.images = [...post.images, ...images];
+		post.images = post.images.filter((img) => !deletedImages.includes(img));
+
+		let promises: Promise<boolean>[] = [];
+		deletedImages.forEach((img: string) => {
+			promises.push(deleteFileFromPath(img));
+		});
+
+		await Promise.all(promises);
 
 		await post.save();
 
@@ -232,7 +257,7 @@ export const likePost = asyncHandler(
 		await post.save();
 
 		res.status(200).json({
-			success: true
+			success: true,
 		});
 	}
 );

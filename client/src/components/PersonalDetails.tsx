@@ -120,7 +120,7 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						label="Bio"
 						field="bio"
 						defaultValue={bioValue}
-						placeHolder="Tell us about yourself..."
+						placeholder="Tell us about yourself..."
 						StartIcon={FaBook}
 					>
 						<div className="absolute right-4 bottom-2 text-sm text-gray-400">

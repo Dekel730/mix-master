@@ -10,7 +10,7 @@ import User, {
 	UserSettings,
 } from '../models/userModel';
 import { email_regex, password_regex } from '../utils/regex';
-import { deleteFile, sendEmail } from '../utils/functions';
+import { sendEmail, deleteFileFromPath, deleteFile } from '../utils/functions';
 import {
 	deletePostComments,
 	deleteUserCommentsAndReplies,
@@ -123,23 +123,14 @@ const register = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
 		const { f_name, l_name, email, password } = req.body;
 		if (!f_name || !l_name || !email || !password) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('All fields are required');
 		}
 		if (!email_regex.test(email)) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('Invalid email');
 		}
 		if (!password_regex.test(password)) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error(
 				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
@@ -149,9 +140,6 @@ const register = asyncHandler(
 			email: { $regex: new RegExp(`^${email}$`, 'i') },
 		});
 		if (userFound) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('User already exists');
 		}
@@ -202,9 +190,7 @@ const deleteUser = asyncHandler(
 			)
 		);
 		promises.push(deleteUserPosts(id));
-		if (user.picture) {
-			promises.push(deleteFile(user.picture));
-		}
+		promises.push(deleteFileFromPath(user.picture));
 		promises.push(deleteUserCommentsAndReplies(id));
 		promises.push(User.findByIdAndDelete(id));
 		const [_, _2, posts] = await Promise.all(promises);
@@ -387,34 +373,22 @@ const updateUser = asyncHandler(
 			bio?: string;
 		} = req.body;
 		if (!f_name || !l_name) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('First name and last name are required');
 		}
 		if (bio && bio.length > MAX_BIO_LENGTH) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('Bio must be less than 250 characters');
 		}
 		let picture: string | undefined | null = user.picture;
 		let deletePictureBool = deletePicture === 'true';
 		if (req.file) {
-			if (user.picture) {
-				await deleteFile(user.picture);
-			}
+			await deleteFileFromPath(user.picture);
 			picture = req.file.path;
 		}
 		if (deletePictureBool) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
-			if (user.picture) {
-				await deleteFile(user.picture);
-			}
+			await deleteFile(req.file);
+			await deleteFileFromPath(user.picture);
 			picture = null;
 		}
 		const userUpdated = await User.findByIdAndUpdate(
