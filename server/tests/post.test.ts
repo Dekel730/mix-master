@@ -14,12 +14,7 @@ const post = {
 			amount: '1 cup',
 		},
 	],
-	instructions: [
-		{
-			title: 'Test Instruction',
-			steps: ['Step 1', 'Step 2'],
-		},
-	],
+	instructions: ['Step 1', 'Step 2'],
 };
 
 const noID = '6752d2e24222f986649b5809';
