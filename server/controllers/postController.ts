@@ -141,7 +141,7 @@ export const getFeedPosts = asyncHandler(
 			.sort({ createdAt: -1 })
 			.limit(POSTS_PAGE_SIZE)
 			.skip(POSTS_PAGE_SIZE * (pageNumber - 1))
-			.populate('user', 'f_name _id picture l_name');
+			.populate('user', 'f_name _id picture gender l_name');
 
 		const pages = Math.ceil(feedPosts.length / POSTS_PAGE_SIZE);
 
@@ -171,7 +171,7 @@ export const getUserPosts = asyncHandler(
 		const userPosts = await Post.find({ user: userId })
 			.limit(POSTS_PAGE_SIZE)
 			.skip(POSTS_PAGE_SIZE * (pageNumber - 1))
-			.populate('user', 'f_name _id picture l_name')
+			.populate('user', 'f_name _id picture gender l_name')
 			.sort({ createdAt: -1 });
 
 		const pages = Math.ceil(userPosts.length / POSTS_PAGE_SIZE);
@@ -314,7 +314,7 @@ export const getPost = asyncHandler(
 		const { postId } = req.params;
 
 		const post = await Post.findById(postId)
-			.populate('user', 'f_name _id picture l_name')
+			.populate('user', 'f_name _id picture gender l_name')
 			.populate('comments', 'content user createdAt');
 
 		if (!post) {
