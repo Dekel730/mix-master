@@ -17,13 +17,23 @@ export const isValidURL = (string: string): boolean => {
 	}
 };
 
-export const getUserPicture = (picture: string | undefined): string => {
-	if (picture) {
-		return isValidURL(picture)
-			? picture
-			: `${import.meta.env.VITE_API_ADDRESS}/${picture}`;
+export const getUserPicture = (user: {
+	gender: string;
+	picture?: string;
+}): string => {
+	if (user.picture) {
+		return isValidURL(user.picture)
+			? user.picture
+			: `${import.meta.env.VITE_API_ADDRESS}/${user.picture}`;
 	}
-	return '/cocktail.png';
+	switch (user.gender) {
+		case 'Male':
+			return '/man-avatar.png';
+		case 'Female':
+			return '/woman-avatar.png';
+		default:
+			return '/cocktail.png';
+	}
 };
 
 export const getDeviceDetails = (): {
@@ -63,7 +73,7 @@ export const deleteAuthLocalStorage = (): void => {
 	localStorage.removeItem('refreshToken');
 	localStorage.removeItem('expiresAt');
 	localStorage.removeItem('user');
-	localStorage.removeItem('isAuthenticated');
+	localStorage.setItem('isAuthenticated', 'false');
 };
 
 export const formatDate = (date: Date): string => {

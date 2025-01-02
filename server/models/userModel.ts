@@ -1,7 +1,5 @@
 import * as mongoose from 'mongoose';
 
-
-
 export interface Device {
 	id: string;
 	name: string;
@@ -24,11 +22,57 @@ export interface IUser {
 	password: string;
 	isVerified: boolean;
 	resetPasswordToken: string;
-	picture: string;
+	picture?: string;
+	gender: 'Male' | 'Female' | 'Other';
 	followers: mongoose.Schema.Types.ObjectId[];
 	following: mongoose.Schema.Types.ObjectId[];
 	createdAt?: Date;
 	tokens: IToken[];
+}
+
+export interface IDevice {
+	createdAt: Date;
+	device_id: string;
+	name: string;
+	type: string;
+}
+
+export interface UserSettings {
+	f_name: string;
+	l_name: string;
+	email: string;
+	picture?: string;
+	gender: 'Male' | 'Female' | 'Other';
+	bio?: string;
+	devices: IDevice[];
+}
+
+export interface UserDisplay {
+	f_name: string;
+	l_name: string;
+	email: string;
+	bio?: string;
+	gender: 'Male' | 'Female' | 'Other';
+	picture?: string;
+	_id: string;
+	createdAt: Date;
+	following: number;
+	followers: number;
+	self: boolean;
+	isFollowing: boolean;
+}
+
+export interface UserData {
+	f_name: string;
+	l_name: string;
+	email: string;
+	bio?: string;
+	gender: 'Male' | 'Female' | 'Other';
+	picture?: string;
+	_id: string;
+	createdAt: Date;
+	following: number;
+	followers: number;
 }
 
 const UserScheme = new mongoose.Schema<IUser>(
@@ -62,6 +106,10 @@ const UserScheme = new mongoose.Schema<IUser>(
 		},
 		picture: {
 			type: String,
+		},
+		gender: {
+			type: String,
+			default: 'Other',
 		},
 		followers: [
 			{

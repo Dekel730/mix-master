@@ -4,7 +4,7 @@ import { post } from '../utils/requests';
 import { toast } from 'react-toastify';
 import { FieldValues, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaCocktail, FaEnvelope, FaUser } from 'react-icons/fa';
+import { FaCocktail, FaEnvelope, FaUser, FaVenusMars } from 'react-icons/fa';
 import GoogleLogin from '../components/GoogleLogin';
 import z from 'zod';
 import { password_regex } from '../utils/regex';
@@ -13,6 +13,8 @@ import Input from '../components/inputs/Input';
 import CreatePassword from '../components/CreatePassword';
 import FileInput from '../components/inputs/FileInput';
 import { getDeviceDetails } from '../utils/functions';
+import { GENDER_OPTIONS } from '../utils/consts';
+import Select from '../components/inputs/Select';
 
 interface IProps {
 	setIsAuthenticated: (isAuthenticated: boolean) => void;
@@ -73,6 +75,7 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 		formData.append('f_name', data.f_name);
 		formData.append('l_name', data.l_name);
 		formData.append('password', data.password);
+		formData.append('gender', data.gender);
 		if (selectedFile) {
 			formData.append('picture', selectedFile);
 		}
@@ -161,6 +164,16 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 										register={register}
 										errors={errors}
 									/>
+
+									<Select
+										register={register}
+										errors={errors}
+										label="Gender"
+										field="gender"
+										options={GENDER_OPTIONS}
+										StartIcon={FaVenusMars}
+									/>
+
 									<Input
 										field="email"
 										StartIcon={FaEnvelope}

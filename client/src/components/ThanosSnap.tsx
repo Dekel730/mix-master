@@ -3,9 +3,14 @@ import './ThanosSnap.css';
 
 interface ThanosSnapProps {
 	isDisintegrating: boolean;
+	particlesColors?: string[];
 	children?: React.ReactNode;
 }
-const ThanosSnap = ({ isDisintegrating, children }: ThanosSnapProps) => {
+const ThanosSnap = ({
+	isDisintegrating,
+	children,
+	particlesColors,
+}: ThanosSnapProps) => {
 	const divRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -19,7 +24,7 @@ const ThanosSnap = ({ isDisintegrating, children }: ThanosSnapProps) => {
 		const particles: HTMLDivElement[] = [];
 		const rect = element.getBoundingClientRect();
 		const particleCount = 1300;
-		const colors = [
+		const colors = particlesColors || [
 			'rgba(255, 255, 255, 0.8)',
 			'rgba(200, 200, 200, 0.8)',
 			'rgba(150, 150, 150, 0.8)',

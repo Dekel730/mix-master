@@ -1,231 +1,403 @@
-import asyncHandler from "express-async-handler";
-import { Request, Response, NextFunction } from "express";
+import asyncHandler from 'express-async-handler';
+import { Request, Response, NextFunction } from 'express';
 import Post, {
-    IPost,
-    PostDocument,
-} from "../models/postModel";
-import User from "../models/userModel";
+	Ingredient,
+	Instructions,
+	IPost,
+	PostDocument,
+} from '../models/postModel';
+import User from '../models/userModel';
+import { POSTS_PAGE_SIZE } from '../utils/consts';
+import { deleteFileFromPath } from '../utils/functions';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 interface PostWithCounts extends IPost {
-    likeCount: number;
-    commentCount: number;
+	likeCount: number;
+	commentCount: number;
 }
 
 const deleteUserPosts = async (userId: string): Promise<PostDocument[]> => {
-    const posts = await Post.find({ user: userId });
-    await Post.deleteMany({ user: userId });
-    return posts;
+	const posts = await Post.find({ user: userId });
+	await Post.deleteMany({ user: userId });
+	return posts;
 };
 
 const postsWithCounts = (posts: PostDocument[]): PostWithCounts[] => {
-    return posts.map((post) => ({
-        ...post.toObject(),
-        likeCount: post.likes.length,
-        commentCount: post.comments.length,
-    }));
+	return posts.map((post) => ({
+		...post.toObject(),
+		likeCount: post.likes.length,
+		commentCount: post.comments.length,
+	}));
 };
 
 const checkRequired = (
-    title: string | undefined,
-    ingredients: string | undefined,
-    instructions: string | undefined,
-    res: Response
+	title: string | undefined,
+	ingredients: string | undefined,
+	instructions: string | undefined,
+	res: Response
 ) => {
-    if (!title || !ingredients || !instructions) {
-        res.status(400);
-        throw new Error("Please fill all required fields");
-    }
+	if (!title || !ingredients || !instructions) {
+		res.status(400);
+		throw new Error('Please fill all required fields');
+	}
 
-    const ingredients_object = JSON.parse(ingredients);
-    const instructions_object = JSON.parse(instructions);
+	const ingredients_object: Ingredient[] = JSON.parse(ingredients);
+	const instructions_object: Instructions[] = JSON.parse(instructions);
 
-    if (!ingredients_object.length || !instructions_object.length) {
-        res.status(400);
-        throw new Error(
-            "Instructions and ingredients must have at least one item"
-        );
-    }
+	if (!ingredients_object.length || !instructions_object.length) {
+		res.status(400);
+		throw new Error(
+			'Instructions and ingredients must have at least one item'
+		);
+	}
 
-    return [ingredients_object, instructions_object];
+	if (
+		!ingredients_object.every((ingredient: Ingredient) => ingredient.name)
+	) {
+		res.status(400);
+		throw new Error('Ingredients must have name');
+	}
+
+	if (
+		!instructions_object.every(
+			(instruction: Instructions) =>
+				instruction.title &&
+				instruction.steps.length &&
+				instruction.steps.every((step) => step)
+		)
+	) {
+		res.status(400);
+		throw new Error('Instructions must have title and steps with content');
+	}
+
+	return { ingredients_object, instructions_object };
 };
 
 // Create Post
 export const createPost = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { title, description, ai, ingredients, instructions } = req.body;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const {
+			title,
+			description,
+			ai,
+			ingredients,
+			instructions,
+		}: {
+			title: string;
+			description: string;
+			ai: boolean;
+			ingredients: string;
+			instructions: string;
+		} = req.body;
+		let images: string[] = [];
+		if (req.files) {
+			images = (req.files as Express.Multer.File[]).map(
+				(file: Express.Multer.File) => file.path
+			);
+		}
 
-        const [ingredients_object, instructions_object] = checkRequired(
-            title,
-            ingredients,
-            instructions,
-            res
-        );
+		const { ingredients_object, instructions_object } = checkRequired(
+			title,
+			ingredients,
+			instructions,
+			res
+		);
 
-        const user = req.user!;
-        const userId = user._id;
+		const user = req.user!;
+		const userId = user._id;
 
-        const newPost = await Post.create({
-            title,
-            description,
-            ingredients: ingredients_object,
-            instructions: instructions_object,
-            user: userId,
-            ai,
-        });
+		const newPost = await Post.create({
+			title,
+			images,
+			description,
+			ingredients: ingredients_object,
+			instructions: instructions_object,
+			user: userId,
+			ai,
+		});
 
-        res.status(201).json({
-            success: true,
-            post: newPost,
-        });
-    }
+		res.status(201).json({
+			success: true,
+			post: newPost,
+		});
+	}
 );
 
 // Get Feed Posts (posts of users the user is following)
 export const getFeedPosts = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const userId = req.user!.id;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const { page } = req.query;
+		const userId = req.user!.id;
 
-        const user = await User.findById(userId).select("following");
-        const followingIds = user?.following || [];
+		const user = await User.findById(userId).select('following');
+		const followingIds = user?.following || [];
 
-        const feedPosts = await Post.find({ user: { $in: followingIds } })
-            .sort({ createdAt: -1 })
-            .populate("user", "username")
-            .exec();
+		const pageNumber = page ? Number(page) : 1;
 
-        const posts = postsWithCounts(feedPosts);
+		const count: number = await Post.find({
+			user: { $in: followingIds },
+		}).countDocuments();
 
-        res.status(200).json({
-            success: true,
-            posts,
-        });
-    }
+		const feedPosts = await Post.find({ user: { $in: followingIds } })
+			.sort({ createdAt: -1 })
+			.limit(POSTS_PAGE_SIZE)
+			.skip(POSTS_PAGE_SIZE * (pageNumber - 1))
+			.populate('user', 'f_name _id picture gender l_name');
+
+		const pages = Math.ceil(feedPosts.length / POSTS_PAGE_SIZE);
+
+		const posts = postsWithCounts(feedPosts);
+
+		res.status(200).json({
+			success: true,
+			posts,
+			count,
+			pages,
+		});
+	}
+);
+
+export const createWithAI = asyncHandler(
+	async (req: Request, res: Response, next: NextFunction) => {
+		const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+		const { language, difficulty, ingredients } = req.body;
+		let ingredients_object = ingredients;
+
+		if (!language || !difficulty) {
+			res.status(400);
+			throw new Error('Please fill all required fields');
+		}
+
+		if (!ingredients) {
+			ingredients_object = [];
+		}
+		const model = genAI.getGenerativeModel({
+			model: 'gemini-2.0-flash',
+			generationConfig: {
+				responseMimeType: 'application/json',
+				responseSchema: {
+					type: SchemaType.OBJECT,
+					properties: {
+						title: { type: SchemaType.STRING },
+						description: { type: SchemaType.STRING },
+						ingredients: {
+							type: SchemaType.ARRAY,
+							items: {
+								type: SchemaType.OBJECT,
+								properties: {
+									name: { type: SchemaType.STRING },
+									amount: {
+										type: SchemaType.STRING,
+									},
+								},
+							},
+						},
+						instructions: {
+							type: SchemaType.OBJECT,
+							properties: {
+								title: { type: SchemaType.STRING },
+								steps: {
+									type: SchemaType.ARRAY,
+									items: { type: SchemaType.STRING },
+								},
+							},
+						},
+					},
+				},
+			},
+		});
+		const prompt = `Create a cocktail recipe that is ${difficulty} difficulty level and includes ${ingredients_object.join(
+			', '
+		)} in ${language} language in JSON format`;
+		const result = await model.generateContent(prompt);
+
+		console.log(result.response.text());
+		const resultJSON = JSON.parse(result.response.text());
+
+		res.status(200).json({
+			success: true,
+			post: resultJSON,
+		});
+	}
 );
 
 // Get User Posts
 export const getUserPosts = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const userId = req.user!._id;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const { page } = req.query;
+		const { userId } = req.params;
 
-        const userPosts = await Post.find({ user: userId })
-            .sort({ createdAt: -1 })
-            .exec();
+		const pageNumber = page ? Number(page) : 1;
 
-        const posts = postsWithCounts(userPosts);
+		const count: number = await Post.find({
+			user: userId,
+		}).countDocuments();
 
-        res.status(200).json({
-            success: true,
-            posts,
-        });
-    }
+		const userPosts = await Post.find({ user: userId })
+			.limit(POSTS_PAGE_SIZE)
+			.skip(POSTS_PAGE_SIZE * (pageNumber - 1))
+			.populate('user', 'f_name _id picture gender l_name')
+			.sort({ createdAt: -1 });
+
+		const pages = Math.ceil(userPosts.length / POSTS_PAGE_SIZE);
+
+		const posts = postsWithCounts(userPosts);
+
+		res.status(200).json({
+			success: true,
+			posts,
+			pages,
+			count,
+		});
+	}
 );
 
 // Delete Post
 export const deletePost = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { postId } = req.params;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const { postId } = req.params;
 
-        const post = await Post.findById(postId);
-        if (!post) {
-            res.status(404);
-            throw new Error("post not found");
-        }
+		const post = await Post.findById(postId);
+		if (!post) {
+			res.status(404);
+			throw new Error('post not found');
+		}
 
-        await Post.findByIdAndUpdate(postId);
+		if (post.user.toString() !== req.user!.id) {
+			res.status(401);
+			throw new Error('You are not authorized to delete this post');
+		}
 
-        res.status(200).json({
-            success: true,
-            message: "post deleted successfully",
-        });
-    }
+		await Post.findByIdAndUpdate(postId);
+
+		res.status(200).json({
+			success: true,
+			message: 'post deleted successfully',
+		});
+	}
 );
 
 // Update Post
 export const updatePost = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { postId } = req.params;
-        const { title, description, ingredients, instructions } = req.body;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const { postId } = req.params;
+		const {
+			title,
+			description,
+			ingredients,
+			instructions,
+			deletedImages,
+		}: {
+			title: string;
+			description: string;
+			ingredients: string;
+			instructions: string;
+			deletedImages: string[];
+		} = req.body;
 
-        const [ingredients_object, instructions_object] = checkRequired(
-            title,
-            ingredients,
-            instructions,
-            res
-        );
+		let images: string[] = [];
+		if (req.files) {
+			images = (req.files as Express.Multer.File[]).map(
+				(file: Express.Multer.File) => file.path
+			);
+		}
 
-        const post = await Post.findById(postId);
+		const { ingredients_object, instructions_object } = checkRequired(
+			title,
+			ingredients,
+			instructions,
+			res
+		);
 
-        if (!post) {
-            res.status(404);
-            throw new Error("Post not found");
-        }
+		const post = await Post.findById(postId);
 
-        post.title = title;
-        post.description = description;
-        post.ingredients = ingredients_object;
-        post.instructions = instructions_object;
+		if (!post) {
+			res.status(404);
+			throw new Error('Post not found');
+		}
 
-        await post.save();
+		if (post.user.toString() !== req.user!.id) {
+			res.status(401);
+			throw new Error('You are not authorized to update this post');
+		}
 
-        res.status(200).json({
-            success: true,
-            post,
-        });
-    }
+		post.title = title;
+		post.description = description;
+		post.ingredients = ingredients_object;
+		post.instructions = instructions_object;
+		post.images = [...post.images, ...images];
+		post.images = post.images.filter((img) => !deletedImages.includes(img));
+
+		let promises: Promise<boolean>[] = [];
+		deletedImages.forEach((img: string) => {
+			promises.push(deleteFileFromPath(img));
+		});
+
+		await Promise.all(promises);
+
+		await post.save();
+
+		res.status(200).json({
+			success: true,
+			post,
+		});
+	}
 );
 
 // Like/Unlike Post
 export const likePost = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { postId } = req.params;
-        const user = req.user!;
-        const userId = req.user!.id;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const { postId } = req.params;
+		const userId = req.user!.id;
 
-        const post = await Post.findById(postId);
+		const post = await Post.findById(postId);
 
-        if (!post) {
-            res.status(404);
-            throw new Error("Post not exist");
-        }
+		if (!post) {
+			res.status(404);
+			throw new Error('Post not exist');
+		}
 
-        if (post.likes.includes(userId)) {
-            // Unlike the post
-            post.likes = post.likes.filter((id) => id.toString() !== userId);
-        } else {
-            // Like the post
-            post.likes.push(userId);
-        }
+		if (post.likes.includes(userId)) {
+			// Unlike the post
+			post.likes = post.likes.filter((id) => id.toString() !== userId);
+		} else {
+			// Like the post
+			post.likes.push(userId);
+		}
 
-        await post.save();
+		await post.save();
 
-        res.status(200).json({
-            success: true,
-            post: likePost.length,
-        });
-    }
+		res.status(200).json({
+			success: true,
+		});
+	}
 );
 
 // Get Post (with like and comment counts)
 export const getPost = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { postId } = req.params;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const { postId } = req.params;
 
-        const post = await Post.findById(postId)
-            .populate("user", "username")
-            .populate("comments", "content user createdAt")
-            .exec();
+		const post = await Post.findById(postId)
+			.populate('user', 'f_name _id picture gender l_name')
+			.populate('comments', 'content user createdAt');
 
-        if (!post) {
-            res.status(404);
-            throw new Error("Post not found");
-        }
+		if (!post) {
+			res.status(404);
+			throw new Error('Post not found');
+		}
 
-        res.status(200).json({
-            ...post.toObject(),
-            likeCount: post.likes.length,
-            commentCount: post.comments.length,
-        });
-    }
+		const postWithCounts: PostWithCounts = {
+			...post.toObject(),
+			likeCount: post.likes.length,
+			commentCount: post.comments.length,
+		};
+
+		res.status(200).json({
+			success: true,
+			post: postWithCounts,
+		});
+	}
 );
 
 export { deleteUserPosts };

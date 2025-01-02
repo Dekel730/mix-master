@@ -4,6 +4,7 @@ export interface IUserProfile {
 	l_name: string;
 	email: string;
 	picture?: string;
+	gender: string;
 	bio?: string;
 	self: boolean;
 	followers: number;
@@ -17,6 +18,7 @@ export const userProfileDefault: IUserProfile = {
 	f_name: '',
 	l_name: '',
 	email: '',
+	gender: 'Other',
 	self: false,
 	followers: 0,
 	following: 0,
@@ -36,6 +38,7 @@ export interface IUserSettings {
 	l_name: string;
 	email: string;
 	picture?: string;
+	gender: string;
 	bio?: string;
 	devices: Device[];
 }
@@ -44,5 +47,6 @@ export const userSettingsDefault: IUserSettings = {
 	f_name: '',
 	l_name: '',
 	email: '',
+	gender: 'Other',
 	devices: [],
 };
