@@ -92,7 +92,7 @@ const CocktailDisplay = ({ cocktail, likeUnlike }: CocktailDisplayProps) => {
 					className="h-8 w-8 rounded-full overflow-hidden cursor-pointer"
 				>
 					<img
-						src={getUserPicture(cocktail.user.picture)}
+						src={getUserPicture(cocktail.user)}
 						alt="Avatar"
 						className="h-full w-full object-cover"
 					/>

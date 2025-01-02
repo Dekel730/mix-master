@@ -17,7 +17,6 @@ export interface IPost {
 export interface Ingredient {
 	name: string;
 	amount: string;
-	ingredient: Ingredient[];
 }
 
 export interface Instructions {
@@ -32,13 +31,7 @@ const IngredientScheme = new mongoose.Schema<Ingredient>({
 	},
 	amount: {
 		type: String,
-	},
-	ingredient: [
-		{
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Ingredient',
-		},
-	],
+	}
 });
 
 const InstructionsScheme = new mongoose.Schema<Instructions>({

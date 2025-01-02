@@ -30,6 +30,7 @@ const getUserData = (user: UserDocument): UserData => ({
 	createdAt: user.createdAt!,
 	followers: user.followers.length,
 	following: user.following.length,
+	gender: user.gender,
 });
 
 const createUserLogin = async (
@@ -121,7 +122,7 @@ const login = asyncHandler(
 
 const register = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
-		const { f_name, l_name, email, password } = req.body;
+		const { f_name, l_name, email, password, gender } = req.body;
 		if (!f_name || !l_name || !email || !password) {
 			res.status(400);
 			throw new Error('All fields are required');
@@ -149,6 +150,7 @@ const register = asyncHandler(
 			f_name,
 			l_name,
 			email,
+			gender,
 			password: hashedPassword,
 			picture: req.file ? req.file.path : undefined,
 		});
@@ -304,6 +306,7 @@ const getUserDisplay = (
 		f_name: user.f_name,
 		l_name: user.l_name,
 		email: user.email,
+		gender: user.gender,
 		createdAt: user.createdAt!,
 		followers: user.followers.length,
 		following: user.following.length,
@@ -339,6 +342,7 @@ const getUserSettingsObject = (user: UserDocument): UserSettings => ({
 	email: user.email,
 	picture: user.picture,
 	bio: user.bio,
+	gender: user.gender,
 	devices: user.tokens.map((t) => ({
 		device_id: t.device_id,
 		createdAt: t.createdAt,
@@ -366,15 +370,17 @@ const updateUser = asyncHandler(
 			l_name,
 			deletePicture,
 			bio,
+			gender,
 		}: {
 			f_name: string;
 			l_name: string;
 			deletePicture: string | undefined;
 			bio?: string;
+			gender: string;
 		} = req.body;
-		if (!f_name || !l_name) {
+		if (!f_name || !l_name || !gender) {
 			res.status(400);
-			throw new Error('First name and last name are required');
+			throw new Error('First name and last name and gender are required');
 		}
 		if (bio && bio.length > MAX_BIO_LENGTH) {
 			res.status(400);
@@ -398,6 +404,7 @@ const updateUser = asyncHandler(
 				l_name,
 				picture,
 				bio,
+				gender,
 			},
 			{ new: true }
 		);
@@ -584,6 +591,7 @@ const googleLogin = asyncHandler(
 			const newUser = new User({
 				f_name: payload.given_name,
 				l_name: payload.family_name,
+				gender: 'Other',
 				email,
 				password,
 				picture: payload.picture,

@@ -1,6 +1,11 @@
 import asyncHandler from 'express-async-handler';
 import { Request, Response, NextFunction } from 'express';
-import Post, { IPost, PostDocument } from '../models/postModel';
+import Post, {
+	Ingredient,
+	Instructions,
+	IPost,
+	PostDocument,
+} from '../models/postModel';
 import User from '../models/userModel';
 import { POSTS_PAGE_SIZE } from '../utils/consts';
 import { deleteFileFromPath } from '../utils/functions';
@@ -35,8 +40,8 @@ const checkRequired = (
 		throw new Error('Please fill all required fields');
 	}
 
-	const ingredients_object = JSON.parse(ingredients);
-	const instructions_object = JSON.parse(instructions);
+	const ingredients_object: Ingredient[] = JSON.parse(ingredients);
+	const instructions_object: Instructions[] = JSON.parse(instructions);
 
 	if (!ingredients_object.length || !instructions_object.length) {
 		res.status(400);
@@ -45,13 +50,44 @@ const checkRequired = (
 		);
 	}
 
-	return [ingredients_object, instructions_object];
+	if (
+		!ingredients_object.every((ingredient: Ingredient) => ingredient.name)
+	) {
+		res.status(400);
+		throw new Error('Ingredients must have name');
+	}
+
+	if (
+		!instructions_object.every(
+			(instruction: Instructions) =>
+				instruction.title &&
+				instruction.steps.length &&
+				instruction.steps.every((step) => step)
+		)
+	) {
+		res.status(400);
+		throw new Error('Instructions must have title and steps with content');
+	}
+
+	return { ingredients_object, instructions_object };
 };
 
 // Create Post
 export const createPost = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction) => {
-		const { title, description, ai, ingredients, instructions } = req.body;
+		const {
+			title,
+			description,
+			ai,
+			ingredients,
+			instructions,
+		}: {
+			title: string;
+			description: string;
+			ai: boolean;
+			ingredients: string;
+			instructions: string;
+		} = req.body;
 		let images: string[] = [];
 		if (req.files) {
 			images = (req.files as Express.Multer.File[]).map(
@@ -59,7 +95,7 @@ export const createPost = asyncHandler(
 			);
 		}
 
-		const [ingredients_object, instructions_object] = checkRequired(
+		const { ingredients_object, instructions_object } = checkRequired(
 			title,
 			ingredients,
 			instructions,
@@ -180,8 +216,19 @@ export const deletePost = asyncHandler(
 export const updatePost = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction) => {
 		const { postId } = req.params;
-		const { title, description, ingredients, instructions, deletedImages } =
-			req.body;
+		const {
+			title,
+			description,
+			ingredients,
+			instructions,
+			deletedImages,
+		}: {
+			title: string;
+			description: string;
+			ingredients: string;
+			instructions: string;
+			deletedImages: string[];
+		} = req.body;
 
 		let images: string[] = [];
 		if (req.files) {
@@ -190,7 +237,7 @@ export const updatePost = asyncHandler(
 			);
 		}
 
-		const [ingredients_object, instructions_object] = checkRequired(
+		const { ingredients_object, instructions_object } = checkRequired(
 			title,
 			ingredients,
 			instructions,
@@ -236,7 +283,6 @@ export const updatePost = asyncHandler(
 export const likePost = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction) => {
 		const { postId } = req.params;
-		const user = req.user!;
 		const userId = req.user!.id;
 
 		const post = await Post.findById(postId);

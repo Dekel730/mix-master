@@ -86,7 +86,7 @@ const Header = ({ setIsLoading, setIsAuthenticated }: HeaderProps) => {
 			<IconMenu
 				Icon={
 					<img
-						src={getUserPicture(user.picture)}
+						src={getUserPicture(user)}
 						alt="User profile"
 						className="w-full h-full object-cover"
 					/>

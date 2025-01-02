@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { FieldValues, useForm } from 'react-hook-form';
-import { FaBook, FaTrash, FaUser } from 'react-icons/fa';
+import { FaBook, FaTrash, FaUser, FaVenusMars } from 'react-icons/fa';
 import z from 'zod';
 import { IUserSettings } from '../types/user';
 import Spinner from './Spinner';
@@ -10,9 +10,10 @@ import { toast } from 'react-toastify';
 import Input from './inputs/Input';
 import FileInput from './inputs/FileInput';
 import TextArea from './inputs/TextArea';
-import { MAX_BIO_LENGTH } from '../utils/consts';
+import { GENDER_OPTIONS, MAX_BIO_LENGTH } from '../utils/consts';
 import Modal from './Modal';
 import { deleteAuthLocalStorage } from '../utils/functions';
+import Select from './inputs/Select';
 
 interface PersonalDetailsProps {
 	user: IUserSettings;
@@ -23,6 +24,7 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 		f_name: z.string().nonempty("First name can't be empty"),
 		l_name: z.string().nonempty("Last name can't be empty"),
 		bio: z.string().max(250, 'Bio must be less than 250 characters'),
+		gender: z.enum(['Male', 'Female', 'Other']).optional(),
 	});
 
 	const {
@@ -30,9 +32,9 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 		handleSubmit,
 		formState: { errors },
 		watch,
-	} = useForm({ resolver: zodResolver(schema) });
+	} = useForm({ resolver: zodResolver(schema), defaultValues: user });
 
-	const bioValue = watch('bio', user.bio || '');
+	const bioValue = watch('bio', user.bio || '')!;
 
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [deleteFile, setDeleteFile] = useState<boolean>(false);
@@ -56,9 +58,11 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 	};
 
 	const submit = async (data: FieldValues) => {
+		console.log(data);
 		const formData = new FormData();
 		formData.append('f_name', data.f_name);
 		formData.append('l_name', data.l_name);
+		formData.append('gender', data.gender);
 		if (selectedFile) {
 			formData.append('picture', selectedFile);
 		}
@@ -77,6 +81,7 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 					f_name: data.user.f_name,
 					l_name: data.user.l_name,
 					email: data.user.email,
+					gender: data.user.gender,
 					picture: data.user.picture,
 					bio: data.user.bio,
 					devices: data.user.devices,
@@ -99,7 +104,6 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						label="First Name"
 						field="f_name"
 						register={register}
-						defaultValue={user.f_name}
 						errors={errors}
 						placeholder="Enter your first name"
 						StartIcon={FaUser}
@@ -107,11 +111,19 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 					<Input
 						label="Last Name"
 						field="l_name"
-						defaultValue={user.l_name}
 						register={register}
 						errors={errors}
 						placeholder="Enter your last name"
 						StartIcon={FaUser}
+					/>
+
+					<Select
+						register={register}
+						errors={errors}
+						label="Gender"
+						field="gender"
+						options={GENDER_OPTIONS}
+						StartIcon={FaVenusMars}
 					/>
 
 					<TextArea
@@ -119,7 +131,6 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						errors={errors}
 						label="Bio"
 						field="bio"
-						defaultValue={bioValue}
 						placeholder="Tell us about yourself..."
 						StartIcon={FaBook}
 					>

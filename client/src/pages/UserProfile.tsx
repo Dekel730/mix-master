@@ -154,7 +154,7 @@ const UserProfile = () => {
 								{/* Profile Info */}
 								<div className="md:col-span-1">
 									<motion.img
-										src={getUserPicture(user.picture)}
+										src={getUserPicture(user)}
 										animate={{ scale: [0, 1] }}
 										transition={{ delay: 0.5 }}
 										alt="Profile picture"
