@@ -10,7 +10,7 @@ import User, {
 	UserSettings,
 } from '../models/userModel';
 import { email_regex, password_regex } from '../utils/regex';
-import { deleteFile, sendEmail } from '../utils/functions';
+import { sendEmail, deleteFileFromPath, deleteFile } from '../utils/functions';
 import {
 	deletePostComments,
 	deleteUserCommentsAndReplies,
@@ -19,9 +19,10 @@ import { deleteUserPosts } from './postController';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
 import { MAX_BIO_LENGTH } from '../utils/consts';
+import { ObjectId } from 'mongoose';
 
 const getUserData = (user: UserDocument): UserData => ({
-	_id: user.id,
+	_id: (user._id as ObjectId).toString(),
 	f_name: user.f_name,
 	l_name: user.l_name,
 	email: user.email,
@@ -29,6 +30,7 @@ const getUserData = (user: UserDocument): UserData => ({
 	createdAt: user.createdAt!,
 	followers: user.followers.length,
 	following: user.following.length,
+	gender: user.gender,
 });
 
 const createUserLogin = async (
@@ -63,22 +65,7 @@ const createUserLogin = async (
 		});
 	}
 	await user.save();
-	const userEx: UserDocument[] = await User.aggregate([
-		{
-			$match: { _id: user._id },
-		},
-		{
-			$addFields: {
-				followers: { $size: '$followers' }, // Compute the length of 'followers' array
-				following: { $size: '$following' }, // Compute the length of 'following' array
-			},
-		},
-		{
-			$unset: ['password', '__v', 'resetPasswordToken'], // Exclude 'password' and '__v' fields
-			// Add other fields you want to exclude in the array
-		},
-	]);
-	const userData: UserData = getUserData(userEx[0]);
+	const userData: UserData = getUserData(user);
 	res.json({
 		success: true,
 		user: userData,
@@ -129,31 +116,22 @@ const login = asyncHandler(
 			res.status(400);
 			throw new Error('Invalid email or password');
 		}
-		createUserLogin(res, user, device);
+		await createUserLogin(res, user, device);
 	}
 );
 
 const register = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
-		const { f_name, l_name, email, password } = req.body;
+		const { f_name, l_name, email, password, gender } = req.body;
 		if (!f_name || !l_name || !email || !password) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('All fields are required');
 		}
 		if (!email_regex.test(email)) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('Invalid email');
 		}
 		if (!password_regex.test(password)) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error(
 				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
@@ -163,9 +141,6 @@ const register = asyncHandler(
 			email: { $regex: new RegExp(`^${email}$`, 'i') },
 		});
 		if (userFound) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('User already exists');
 		}
@@ -175,6 +150,7 @@ const register = asyncHandler(
 			f_name,
 			l_name,
 			email,
+			gender,
 			password: hashedPassword,
 			picture: req.file ? req.file.path : undefined,
 		});
@@ -216,9 +192,7 @@ const deleteUser = asyncHandler(
 			)
 		);
 		promises.push(deleteUserPosts(id));
-		if (user.picture) {
-			promises.push(deleteFile(user.picture));
-		}
+		promises.push(deleteFileFromPath(user.picture));
 		promises.push(deleteUserCommentsAndReplies(id));
 		promises.push(User.findByIdAndDelete(id));
 		const [_, _2, posts] = await Promise.all(promises);
@@ -332,6 +306,7 @@ const getUserDisplay = (
 		f_name: user.f_name,
 		l_name: user.l_name,
 		email: user.email,
+		gender: user.gender,
 		createdAt: user.createdAt!,
 		followers: user.followers.length,
 		following: user.following.length,
@@ -367,6 +342,7 @@ const getUserSettingsObject = (user: UserDocument): UserSettings => ({
 	email: user.email,
 	picture: user.picture,
 	bio: user.bio,
+	gender: user.gender,
 	devices: user.tokens.map((t) => ({
 		device_id: t.device_id,
 		createdAt: t.createdAt,
@@ -394,41 +370,31 @@ const updateUser = asyncHandler(
 			l_name,
 			deletePicture,
 			bio,
+			gender,
 		}: {
 			f_name: string;
 			l_name: string;
 			deletePicture: string | undefined;
 			bio?: string;
+			gender: string;
 		} = req.body;
-		if (!f_name || !l_name) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
+		if (!f_name || !l_name || !gender) {
 			res.status(400);
-			throw new Error('First name and last name are required');
+			throw new Error('First name and last name and gender are required');
 		}
 		if (bio && bio.length > MAX_BIO_LENGTH) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
 			res.status(400);
 			throw new Error('Bio must be less than 250 characters');
 		}
 		let picture: string | undefined | null = user.picture;
 		let deletePictureBool = deletePicture === 'true';
 		if (req.file) {
-			if (user.picture) {
-				await deleteFile(user.picture);
-			}
+			await deleteFileFromPath(user.picture);
 			picture = req.file.path;
 		}
 		if (deletePictureBool) {
-			if (req.file) {
-				await deleteFile(req.file.path);
-			}
-			if (user.picture) {
-				await deleteFile(user.picture);
-			}
+			await deleteFile(req.file);
+			await deleteFileFromPath(user.picture);
 			picture = null;
 		}
 		const userUpdated = await User.findByIdAndUpdate(
@@ -438,6 +404,7 @@ const updateUser = asyncHandler(
 				l_name,
 				picture,
 				bio,
+				gender,
 			},
 			{ new: true }
 		);
@@ -624,19 +591,20 @@ const googleLogin = asyncHandler(
 			const newUser = new User({
 				f_name: payload.given_name,
 				l_name: payload.family_name,
+				gender: 'Other',
 				email,
 				password,
 				picture: payload.picture,
 				isVerified: true,
 			});
 			await newUser.save();
-			createUserLogin(res, newUser, device);
+			await createUserLogin(res, newUser, device);
 		} else {
 			if (!user.isVerified) {
 				user.isVerified = true;
 				await user.save();
 			}
-			createUserLogin(res, user, device);
+			await createUserLogin(res, user, device);
 		}
 	}
 );

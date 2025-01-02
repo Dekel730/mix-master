@@ -1,34 +1,48 @@
-import { FieldErrors, FieldValues, UseFormRegister } from 'react-hook-form';
+import { useRef } from 'react';
+import {
+	FieldErrors,
+	FieldValues,
+	Path,
+	UseFormRegister,
+} from 'react-hook-form';
 
-interface TextAreaProps {
-	field: string;
-	register: UseFormRegister<FieldValues>;
+interface TextAreaProps<TFieldValues extends FieldValues> {
+	field: Path<TFieldValues>;
+	register: UseFormRegister<TFieldValues>;
 	classNames?: string;
 	containerClassNames?: string;
 	label?: string;
-	errors: FieldErrors<FieldValues>;
+	errors: FieldErrors<TFieldValues>;
 	defaultValue?: string;
-	placeHolder: string;
+	placeholder: string;
 	StartIcon?: React.ElementType;
 	children?: React.ReactNode;
+	height?: string;
+	autoExpand?: boolean;
 }
 
-const TextArea = ({
+const TextArea = <TFieldValues extends FieldValues>({
 	field,
 	register,
 	errors,
-	label,
-	classNames,
-	containerClassNames,
-	defaultValue,
-	placeHolder,
+	label = '',
+	classNames = '',
+	containerClassNames = '',
+	defaultValue = '',
+	placeholder,
 	StartIcon,
 	children,
-}: TextAreaProps) => {
-	classNames = classNames || '';
-	label = label || '';
-	containerClassNames = containerClassNames || '';
-	defaultValue = defaultValue || '';
+	height = 'h-32',
+	autoExpand = false,
+}: TextAreaProps<TFieldValues>) => {
+	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+
+	const handleInput = () => {
+		if (textAreaRef.current && autoExpand) {
+			textAreaRef.current.style.height = 'auto'; // Reset height to calculate correctly
+			textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; // Set new height
+		}
+	};
 
 	return (
 		<div className={`space-y-2 ${containerClassNames}`}>
@@ -37,13 +51,18 @@ const TextArea = ({
 			</label>
 			<div className="relative">
 				<textarea
-					{...register(field)}
+					{...register(field)} // Correctly typed using Path<TFieldValues>
+					ref={(instance) => {
+						textAreaRef.current = instance; // Attach ref
+						register(field).ref(instance); // Register with react-hook-form
+					}}
+					onInput={handleInput}
 					id={field}
-					placeholder={placeHolder}
+					placeholder={placeholder}
 					defaultValue={defaultValue}
 					className={`w-full bg-[#1a1a1a] ${
 						errors[field] ? 'ring-2 ring-red-500' : ''
-					} text-white h-32 rounded-xl pl-10 pr-4 pt-3 pb-8 outline-none focus:ring-2 focus:${
+					} text-white ${height} rounded-xl pl-10 pr-4 pt-3 pb-8 outline-none focus:ring-2 focus:${
 						errors[field] ? 'ring-red-500' : 'ring-gray-500'
 					} transition-all resize-none ${classNames}`}
 				/>
@@ -53,9 +72,7 @@ const TextArea = ({
 				{children}
 			</div>
 			<span className="text-red-500 text-sm">
-				{errors[field] &&
-					typeof errors[field].message === 'string' &&
-					errors[field].message}
+				{errors[field]?.message?.toString()}
 			</span>
 		</div>
 	);

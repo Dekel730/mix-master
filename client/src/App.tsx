@@ -16,6 +16,10 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Settings from './pages/Settings';
 import Header from './components/Header';
 import Loader from './components/Loader';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en';
+
+TimeAgo.addDefaultLocale(en);
 
 function App() {
 	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(

@@ -5,10 +5,16 @@ import Spinner from './Spinner';
 
 interface CocktailListProps {
 	cocktails: any;
+	setCocktails: React.Dispatch<React.SetStateAction<any>>;
 	fetchMore: (page: number) => Promise<boolean>;
 	pages: number;
 }
-const CocktailList = ({ cocktails, fetchMore, pages }: CocktailListProps) => {
+const CocktailList = ({
+	cocktails,
+	fetchMore,
+	pages,
+	setCocktails,
+}: CocktailListProps) => {
 	const [page, setPage] = useState<number>(1);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -43,10 +49,19 @@ const CocktailList = ({ cocktails, fetchMore, pages }: CocktailListProps) => {
 		return () => window.removeEventListener('scroll', handleScroll);
 	}, []);
 
+	const likeUnlike = (cocktail: any) => {
+		setCocktails((prevCocktails: any) => ({
+			...prevCocktails,
+			cocktails: prevCocktails.cocktails.map((prevCocktail: any) =>
+				prevCocktail._id === cocktail._id ? cocktail : prevCocktail
+			),
+		}));
+	};
+
 	return (
 		<motion.div
 			initial={{ y: '100vw', opacity: 0 }}
-			animate={{ y: 0, opacity: 1 }}
+			animate={{ y: -10, opacity: 1 }}
 			transition={{
 				type: 'spring',
 				stiffness: 50,
@@ -56,7 +71,10 @@ const CocktailList = ({ cocktails, fetchMore, pages }: CocktailListProps) => {
 		>
 			{cocktails.map((cocktail: any) => (
 				<div key={cocktail._id} className="space-y-4">
-					<CocktailDisplay cocktail={cocktail} />
+					<CocktailDisplay
+						likeUnlike={likeUnlike}
+						cocktail={cocktail}
+					/>
 				</div>
 			))}
 			{isLoading && <Spinner />}

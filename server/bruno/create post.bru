@@ -6,16 +6,38 @@ meta {
 
 post {
   url: http://localhost:3000/api/post
-  body: json
-  auth: none
+  body: multipartForm
+  auth: bearer
 }
 
-headers {
-  Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NTJkNDQ2NTYxOTUxMGRiMTU3YTNjZiIsImlhdCI6MTczNDM2MTcxOCwiZXhwIjoxNzM0MzY1MzE4fQ.8VdnTRIwQszqx6Dtzsu1sgb9kYmbDNcidok_TWqFPLM
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NjFmNTFjZmIxNTBkZjkyN2U3MzI0MSIsImlhdCI6MTczNTU2NzcxNywiZXhwIjoxNzM1NTcxMzE3fQ.8UK9AmXlKs7BivL0Ausiy516SEVCxuy4hC43cTywWMQ
 }
 
 body:json {
   {
-    
+    "title": "vodka redbull",
+    "instructions": [
+      {
+        "title": "mix",
+        "steps": []
+      }
+    ],
+    "ingredients": [
+      {
+        "name": "vodka",
+        "amount": "1 shot"
+      },
+      {
+        "name": "redbull",
+        "amount": "1/2 can"
+      }
+    ]
   }
+}
+
+body:multipart-form {
+  title: vodka rebull
+  instructions: [{"title":"Test Instruction","steps":["Step 1","Step 2"]}]
+  ingredients: [{"name":"Test Ingredient","amount":"1 cup","ingredient":[]}]
 }

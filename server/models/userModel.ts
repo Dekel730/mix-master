@@ -23,7 +23,7 @@ export interface IUser {
 	isVerified: boolean;
 	resetPasswordToken: string;
 	picture?: string;
-	//gender: 'Male' | 'Female' | 'Other';
+	gender: 'Male' | 'Female' | 'Other';
 	followers: mongoose.Schema.Types.ObjectId[];
 	following: mongoose.Schema.Types.ObjectId[];
 	createdAt?: Date;
@@ -42,6 +42,7 @@ export interface UserSettings {
 	l_name: string;
 	email: string;
 	picture?: string;
+	gender: 'Male' | 'Female' | 'Other';
 	bio?: string;
 	devices: IDevice[];
 }
@@ -51,6 +52,7 @@ export interface UserDisplay {
 	l_name: string;
 	email: string;
 	bio?: string;
+	gender: 'Male' | 'Female' | 'Other';
 	picture?: string;
 	_id: string;
 	createdAt: Date;
@@ -65,6 +67,7 @@ export interface UserData {
 	l_name: string;
 	email: string;
 	bio?: string;
+	gender: 'Male' | 'Female' | 'Other';
 	picture?: string;
 	_id: string;
 	createdAt: Date;
@@ -103,6 +106,10 @@ const UserScheme = new mongoose.Schema<IUser>(
 		},
 		picture: {
 			type: String,
+		},
+		gender: {
+			type: String,
+			default: 'Other',
 		},
 		followers: [
 			{

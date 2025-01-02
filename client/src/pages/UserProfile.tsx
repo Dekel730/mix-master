@@ -22,7 +22,7 @@ const UserProfile = () => {
 		pages: 30,
 	});
 
-	const hasRunData = useRef<boolean>(false);
+	const userId = useRef<string>('');
 
 	const { id } = useParams<{ id: string }>();
 
@@ -57,7 +57,11 @@ const UserProfile = () => {
 				return false;
 			},
 			(data: any) => {
-				setCocktailsData(data);
+				setCocktailsData((prev: any) => ({
+					cocktails: [...prev.cocktails, ...data.posts],
+					count: data.count,
+					pages: data.pages,
+				}));
 				result = true;
 			}
 		);
@@ -104,10 +108,6 @@ const UserProfile = () => {
 	};
 
 	const getData = async () => {
-		if (import.meta.env.VITE_ENV === 'development') {
-			if (hasRunData.current) return;
-			hasRunData.current = true;
-		}
 		setIsLoading(true);
 		const accessToken = await getAccessToken();
 		if (!accessToken) {
@@ -121,8 +121,16 @@ const UserProfile = () => {
 	};
 
 	useEffect(() => {
-		getData();
-	}, []);
+		if (id !== userId.current) {
+			userId.current = id!;
+			setCocktailsData({
+				cocktails: [],
+				count: 2,
+				pages: 30,
+			});
+			getData();
+		}
+	}, [id]);
 
 	if (isLoading) {
 		return <Loader />;
@@ -146,7 +154,7 @@ const UserProfile = () => {
 								{/* Profile Info */}
 								<div className="md:col-span-1">
 									<motion.img
-										src={getUserPicture(user.picture)}
+										src={getUserPicture(user)}
 										animate={{ scale: [0, 1] }}
 										transition={{ delay: 0.5 }}
 										alt="Profile picture"
@@ -210,6 +218,7 @@ const UserProfile = () => {
 									</p>
 								</div>
 								<CocktailList
+									setCocktails={setCocktailsData}
 									cocktails={CocktailsData.cocktails}
 									fetchMore={getCocktails}
 									pages={CocktailsData.pages}
