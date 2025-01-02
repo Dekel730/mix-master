@@ -144,24 +144,26 @@ const CocktailForm = ({
 				{ingredientsFieldArray.fields.map((field, index) => (
 					<div
 						key={field.id}
-						className="flex w-full mb-2 space-x-2 bg-[#2a2a2a] p-4 rounded-lg items-start"
+						className="flex flex-col lg:flex-row w-full lg:mb-2 bg-[#2a2a2a] p-4 rounded-lg items-start gap-1"
 					>
-						<Input
-							containerClassNames="flex-1"
-							register={register}
-							errors={errors}
-							field={`ingredients.${index}.name`}
-							placeholder="Ingredient name"
-							StartIcon={BiSolidFoodMenu}
-						/>
-						<Input
-							containerClassNames="flex-1"
-							register={register}
-							errors={errors}
-							field={`ingredients.${index}.amount`}
-							placeholder="Ingredient Amount"
-							StartIcon={AiOutlineNumber}
-						/>
+						<div className="flex flex-1 w-full flex-col lg:flex-row gap-1">
+							<Input
+								containerClassNames="flex-1"
+								register={register}
+								errors={errors}
+								field={`ingredients.${index}.name`}
+								placeholder="Ingredient name"
+								StartIcon={BiSolidFoodMenu}
+							/>
+							<Input
+								containerClassNames="flex-1"
+								register={register}
+								errors={errors}
+								field={`ingredients.${index}.amount`}
+								placeholder="Ingredient Amount"
+								StartIcon={AiOutlineNumber}
+							/>
+						</div>
 						<button
 							type="button"
 							onClick={() => {
@@ -242,7 +244,7 @@ const CocktailForm = ({
 					}}
 					className="mt-2 bg-[#2a2a2a] text-white px-4 py-2 rounded-lg flex items-center"
 				>
-					<FaPlus className="mr-2" /> Add Instruction
+					<FaPlus className="mr-2" /> Add Step
 				</button>
 			</div>
 

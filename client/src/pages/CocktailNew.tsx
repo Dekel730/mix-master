@@ -118,12 +118,12 @@ export default function CreateCocktail() {
 
 	const options = [
 		{
-			label: 'Manual',
+			label: 'Create your own',
 			onClick: () => setActiveOption('manual'),
 			value: 'manual',
 		},
 		{
-			label: 'AI',
+			label: 'Create with AI',
 			onClick: () => setActiveOption('ai'),
 			value: 'ai',
 		},
