@@ -12,16 +12,13 @@ import {
 	useFieldArray,
 	UseFormHandleSubmit,
 	UseFormRegister,
-	UseFormSetValue,
 	UseFormWatch,
 } from 'react-hook-form';
 import TextArea from './inputs/TextArea';
 import { MAX_DESCRIPTION_LENGTH } from '../utils/consts';
 import { BiSolidFoodMenu } from 'react-icons/bi';
 import { AiOutlineNumber } from 'react-icons/ai';
-import { MdTitle } from 'react-icons/md';
 import { PiStepsFill } from 'react-icons/pi';
-import { v4 as uuidv4 } from 'uuid';
 import { useRef } from 'react';
 import { toast } from 'react-toastify';
 
@@ -34,7 +31,6 @@ interface CocktailFormProps {
 	watch: UseFormWatch<IForm>;
 	uploadedImages: UploadedImage[];
 	setUploadedImages: React.Dispatch<React.SetStateAction<UploadedImage[]>>;
-	setValue: UseFormSetValue<IForm>;
 	setPreviewImage: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
@@ -42,13 +38,7 @@ interface IForm {
 	title: string;
 	description: string;
 	ingredients: { name: string; amount: string }[];
-	instructions: {
-		title: string;
-		steps: {
-			step: string;
-			id: string;
-		}[];
-	}[];
+	instructions: { name: string }[];
 }
 
 interface UploadedImage {
@@ -66,7 +56,6 @@ const CocktailForm = ({
 	control,
 	uploadedImages,
 	setUploadedImages,
-	setValue,
 	setPreviewImage,
 }: CocktailFormProps) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -155,24 +144,26 @@ const CocktailForm = ({
 				{ingredientsFieldArray.fields.map((field, index) => (
 					<div
 						key={field.id}
-						className="flex w-full mb-2 space-x-2 bg-[#2a2a2a] p-4 rounded-lg items-start"
+						className="flex flex-col lg:flex-row w-full lg:mb-2 bg-[#2a2a2a] p-4 rounded-lg items-start gap-1"
 					>
-						<Input
-							containerClassNames="flex-1"
-							register={register}
-							errors={errors}
-							field={`ingredients.${index}.name`}
-							placeholder="Ingredient name"
-							StartIcon={BiSolidFoodMenu}
-						/>
-						<Input
-							containerClassNames="flex-1"
-							register={register}
-							errors={errors}
-							field={`ingredients.${index}.amount`}
-							placeholder="Ingredient Amount"
-							StartIcon={AiOutlineNumber}
-						/>
+						<div className="flex flex-1 w-full flex-col lg:flex-row gap-1">
+							<Input
+								containerClassNames="flex-1"
+								register={register}
+								errors={errors}
+								field={`ingredients.${index}.name`}
+								placeholder="Ingredient name"
+								StartIcon={BiSolidFoodMenu}
+							/>
+							<Input
+								containerClassNames="flex-1"
+								register={register}
+								errors={errors}
+								field={`ingredients.${index}.amount`}
+								placeholder="Ingredient Amount"
+								StartIcon={AiOutlineNumber}
+							/>
+						</div>
 						<button
 							type="button"
 							onClick={() => {
@@ -209,85 +200,19 @@ const CocktailForm = ({
 					(instruction, instructionIndex) => (
 						<div
 							key={instruction.id}
-							className="mb-4 bg-[#2a2a2a] p-4 rounded-lg"
+							className="flex w-full mb-2 space-x-2 bg-[#2a2a2a] p-4 rounded-lg items-start"
 						>
-							<Input
+							<TextArea<IForm>
 								register={register}
 								errors={errors}
-								StartIcon={MdTitle}
-								field={`instructions.${instructionIndex}.title`}
-								placeholder="Instruction title"
+								autoExpand={true}
+								containerClassNames="flex-1 justify-center"
+								height="h-12"
+								classNames="p-0 pb-0"
+								field={`instructions.${instructionIndex}.name`}
+								placeholder={`Step ${instructionIndex + 1}`}
+								StartIcon={PiStepsFill}
 							/>
-
-							<div>
-								{watch(
-									`instructions.${instructionIndex}.steps`
-								)?.map((step, stepIndex) => (
-									<div
-										key={step.id}
-										className="flex gap-1 mb-2"
-									>
-										<TextArea<IForm>
-											register={register}
-											errors={errors}
-											autoExpand={true}
-											containerClassNames="flex-1 justify-center"
-											height="h-12"
-											classNames="p-0 pb-0"
-											field={`instructions.${instructionIndex}.steps.${stepIndex}.step`}
-											placeholder={`Step ${
-												stepIndex + 1
-											}`}
-											StartIcon={PiStepsFill}
-										/>
-										<button
-											type="button"
-											onClick={() => {
-												const steps = watch(
-													`instructions.${instructionIndex}.steps`
-												) as {
-													step: string;
-													id: string;
-												}[];
-												steps.splice(stepIndex, 1);
-												setValue(
-													`instructions.${instructionIndex}.steps`,
-													steps
-												);
-											}}
-											className="text-red-500 h-12 mt-2"
-										>
-											<FaTrash />
-										</button>
-									</div>
-								))}
-								<button
-									type="button"
-									onClick={() => {
-										const currentInstructions = [
-											...watch('instructions'),
-										];
-										const currentSteps = [
-											...currentInstructions[
-												instructionIndex
-											].steps,
-										];
-										currentSteps.push({
-											step: '',
-											id: uuidv4(),
-										});
-										currentInstructions[
-											instructionIndex
-										].steps = currentSteps;
-										instructionsFieldArray.replace(
-											currentInstructions
-										); // Force update
-									}}
-									className="mt-2 bg-[#333333] text-white px-4 py-2 rounded-lg flex items-center"
-								>
-									<FaPlus className="mr-2" /> Add Step
-								</button>
-							</div>
 
 							<button
 								type="button"
@@ -303,9 +228,9 @@ const CocktailForm = ({
 										currentInstructions
 									); // Force update
 								}}
-								className="text-red-500 mt-2"
+								className="text-red-500 h-12 mt-2"
 							>
-								Remove Instruction
+								<FaTrash />
 							</button>
 						</div>
 					)
@@ -314,18 +239,12 @@ const CocktailForm = ({
 					type="button"
 					onClick={() => {
 						instructionsFieldArray.append({
-							title: '',
-							steps: [
-								{
-									step: '',
-									id: uuidv4(),
-								},
-							],
+							name: '',
 						});
 					}}
 					className="mt-2 bg-[#2a2a2a] text-white px-4 py-2 rounded-lg flex items-center"
 				>
-					<FaPlus className="mr-2" /> Add Instruction
+					<FaPlus className="mr-2" /> Add Step
 				</button>
 			</div>
 
@@ -379,7 +298,10 @@ const CocktailForm = ({
 				</div>
 			</div>
 
-			<button className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors">
+			<button
+				type="submit"
+				className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors"
+			>
 				Create Cocktail
 			</button>
 		</form>

@@ -1,11 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import { Request, Response, NextFunction } from 'express';
-import Post, {
-	Ingredient,
-	Instructions,
-	IPost,
-	PostDocument,
-} from '../models/postModel';
+import Post, { Ingredient, IPost, PostDocument } from '../models/postModel';
 import User from '../models/userModel';
 import { POSTS_PAGE_SIZE } from '../utils/consts';
 import { deleteFileFromPath } from '../utils/functions';
@@ -42,7 +37,7 @@ const checkRequired = (
 	}
 
 	const ingredients_object: Ingredient[] = JSON.parse(ingredients);
-	const instructions_object: Instructions[] = JSON.parse(instructions);
+	const instructions_object: string[] = JSON.parse(instructions);
 
 	if (!ingredients_object.length || !instructions_object.length) {
 		res.status(400);
@@ -58,16 +53,9 @@ const checkRequired = (
 		throw new Error('Ingredients must have name');
 	}
 
-	if (
-		!instructions_object.every(
-			(instruction: Instructions) =>
-				instruction.title &&
-				instruction.steps.length &&
-				instruction.steps.every((step) => step)
-		)
-	) {
+	if (!instructions_object.every((instruction: string) => instruction)) {
 		res.status(400);
-		throw new Error('Instructions must have title and steps with content');
+		throw new Error('Instructions must have content');
 	}
 
 	return { ingredients_object, instructions_object };
@@ -195,14 +183,7 @@ export const createWithAI = asyncHandler(
 						instructions: {
 							type: SchemaType.ARRAY,
 							items: {
-								type: SchemaType.OBJECT,
-								properties: {
-									title: { type: SchemaType.STRING },
-									steps: {
-										type: SchemaType.ARRAY,
-										items: { type: SchemaType.STRING },
-									},
-								},
+								type: SchemaType.STRING,
 							},
 						},
 					},
@@ -216,6 +197,10 @@ export const createWithAI = asyncHandler(
 
 		const resultJSON: IPost = JSON.parse(result.response.text());
 
+		console.log(resultJSON);
+		console.log(resultJSON.ingredients);
+		console.log(resultJSON.instructions);
+
 		// check if the result is valid
 
 		if (
@@ -224,12 +209,12 @@ export const createWithAI = asyncHandler(
 			!resultJSON.instructions
 		) {
 			res.status(400);
-			throw new Error('Failed to generate cocktail');
+			throw new Error('Failed to generate cocktail1');
 		}
 
 		if (!resultJSON.ingredients.length || !resultJSON.instructions.length) {
 			res.status(400);
-			throw new Error('Failed to generate cocktail');
+			throw new Error('Failed to generate cocktail2');
 		}
 
 		if (
@@ -238,19 +223,14 @@ export const createWithAI = asyncHandler(
 			)
 		) {
 			res.status(400);
-			throw new Error('Failed to generate cocktail');
+			throw new Error('Failed to generate cocktail3');
 		}
 
 		if (
-			!resultJSON.instructions.every(
-				(instruction: Instructions) =>
-					instruction.title &&
-					instruction.steps.length &&
-					instruction.steps.every((step) => step)
-			)
+			!resultJSON.instructions.every((instruction: string) => instruction)
 		) {
 			res.status(400);
-			throw new Error('Failed to generate cocktail');
+			throw new Error('Failed to generate cocktail4');
 		}
 
 		res.status(200).json({

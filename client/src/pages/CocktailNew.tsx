@@ -8,7 +8,6 @@ import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import { authPost } from '../utils/requests';
 import { useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '../components/Sidebar';
 import CocktailForm from '../components/CocktailForm';
 import AICocktailForm from '../components/AICocktailForm';
@@ -56,18 +55,10 @@ export default function CreateCocktail() {
 		instructions: z
 			.array(
 				z.object({
-					title: z.string().nonempty('Instruction title is required'),
-					steps: z
-						.array(
-							z.object({
-								step: z
-									.string()
-									.nonempty('Step content is required')
-									.max(200, 'Step is too long'),
-								id: z.string(),
-							})
-						)
-						.min(1, 'At least one step is required'),
+					name: z
+						.string()
+						.nonempty('Instruction is required')
+						.max(200, 'Instruction is too long'),
 				})
 			)
 			.min(1, 'At least one instruction is required'),
@@ -78,7 +69,6 @@ export default function CreateCocktail() {
 		register,
 		handleSubmit,
 		watch,
-		setValue,
 		formState: { errors },
 	} = useForm({
 		resolver: zodResolver(cocktailSchema),
@@ -86,19 +76,11 @@ export default function CreateCocktail() {
 			title: '',
 			description: '',
 			ingredients: [{ name: '', amount: '' }],
-			instructions: [
-				{
-					title: '',
-					steps: [
-						{
-							step: '',
-							id: uuidv4(),
-						},
-					],
-				},
-			],
+			instructions: [{ name: '' }],
 		},
 	});
+
+	console.log(errors);
 
 	const onSubmit = async (data: FieldValues) => {
 		setIsLoading(true);
@@ -110,18 +92,7 @@ export default function CreateCocktail() {
 			'instructions',
 			JSON.stringify(
 				data.instructions.map(
-					(instruction: {
-						title: string;
-						steps: { step: string; id: string }[];
-					}) => {
-						return {
-							title: instruction.title,
-							steps: instruction.steps.map(
-								(step: { step: string; id: string }) =>
-									step.step
-							),
-						};
-					}
+					(instruction: { name: string }) => instruction.name
 				)
 			)
 		);
@@ -147,12 +118,12 @@ export default function CreateCocktail() {
 
 	const options = [
 		{
-			label: 'Manual',
+			label: 'Create your own',
 			onClick: () => setActiveOption('manual'),
 			value: 'manual',
 		},
 		{
-			label: 'AI',
+			label: 'Create with AI',
 			onClick: () => setActiveOption('ai'),
 			value: 'ai',
 		},
@@ -178,7 +149,6 @@ export default function CreateCocktail() {
 						watch={watch}
 						uploadedImages={uploadedImages}
 						setUploadedImages={setUploadedImages}
-						setValue={setValue}
 						setPreviewImage={setPreviewImage}
 						onSubmit={onSubmit}
 						handleSubmit={handleSubmit}

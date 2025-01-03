@@ -5,7 +5,7 @@ export interface IPost {
 	description?: string;
 	images: string[];
 	ingredients: Ingredient[];
-	instructions: Instructions[];
+	instructions: string[];
 	user: mongoose.Schema.Types.ObjectId;
 	likes: mongoose.Schema.Types.ObjectId[];
 	comments: mongoose.Schema.Types.ObjectId[];
@@ -19,11 +19,6 @@ export interface Ingredient {
 	amount: string;
 }
 
-export interface Instructions {
-	title: string;
-	steps: string[];
-}
-
 const IngredientScheme = new mongoose.Schema<Ingredient>({
 	name: {
 		type: String,
@@ -31,20 +26,7 @@ const IngredientScheme = new mongoose.Schema<Ingredient>({
 	},
 	amount: {
 		type: String,
-	}
-});
-
-const InstructionsScheme = new mongoose.Schema<Instructions>({
-	title: {
-		type: String,
-		required: true,
 	},
-	steps: [
-		{
-			type: String,
-			required: true,
-		},
-	],
 });
 
 const PostScheme = new mongoose.Schema<IPost>(
@@ -69,12 +51,7 @@ const PostScheme = new mongoose.Schema<IPost>(
 				required: true,
 			},
 		],
-		instructions: [
-			{
-				type: InstructionsScheme,
-				required: true,
-			},
-		],
+		instructions: [String],
 		user: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: 'User',
