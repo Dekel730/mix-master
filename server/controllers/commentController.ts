@@ -1,3 +1,5 @@
+import { Content as ClientContent} from "./../../node_modules/@google/generative-ai/dist/types/content.d";
+import { Content as ServerContent  } from "./../../node_modules/@google/generative-ai/dist/server/types/content.d";
 import Comment from "../models/commentModel";
 import asyncHandler from "express-async-handler";
 import { Request, Response, NextFunction } from "express";
@@ -8,7 +10,12 @@ import { MAX_COMMENTS_LIMIT } from "../utils/consts";
 export const createComment = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
         const user = req.user!;
-        const { content, postId, parentComment } = req.body;
+        const {
+            content,
+            postId,
+            parentComment,
+        }: { content: string; postId: string; parentComment?: string } =
+            req.body;
 
         if (!content || !postId) {
             res.status(400);
@@ -49,7 +56,7 @@ export const getCommentsByPost = asyncHandler(
         const { page } = req.query;
         const { postId } = req.params;
 
-        const pageN = page ? Number(page) : 1;
+        const pageN: number = page ? Number(page) : 1;
 
         const skip = (pageN - 1) * MAX_COMMENTS_LIMIT;
 
@@ -65,7 +72,7 @@ export const getCommentsByPost = asyncHandler(
 export const updateComment = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
         const user = req.user!;
-        const { content } = req.body;
+        const { content }: { content: string } = req.body;
         const commentId = req.params.commentId;
 
         if (!content) {
@@ -154,8 +161,7 @@ export const deleteComment = asyncHandler(
     }
 );
 
-///
-
+// Delete User Comments and Replies
 const deleteUserCommentsAndReplies = async (userId: string): Promise<void> => {
     let promises: Promise<any>[] = [];
     const userComments = await Comment.find({ user: userId });
@@ -168,6 +174,7 @@ const deleteUserCommentsAndReplies = async (userId: string): Promise<void> => {
     await Promise.all(promises);
 };
 
+// Delete Post Comments
 const deletePostComments = async (postId: string): Promise<void> => {
     await Comment.deleteMany({ post: postId });
 };
