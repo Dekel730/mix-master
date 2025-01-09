@@ -1,5 +1,3 @@
-import { Content as ClientContent} from "./../../node_modules/@google/generative-ai/dist/types/content.d";
-import { Content as ServerContent  } from "./../../node_modules/@google/generative-ai/dist/server/types/content.d";
 import Comment from "../models/commentModel";
 import asyncHandler from "express-async-handler";
 import { Request, Response, NextFunction } from "express";
