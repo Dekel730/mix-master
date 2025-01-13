@@ -107,7 +107,7 @@ function App() {
 							}
 						/>
 						<Route
-							path="/cocktails/new"
+							path="/cocktail/new"
 							element={
 								<ProtectedRoute
 									isAuthenticated={isAuthenticated}
@@ -117,7 +117,7 @@ function App() {
 							}
 						/>
 						<Route
-							path="/cocktails/:id"
+							path="/cocktail/:id"
 							element={
 								<ProtectedRoute
 									isAuthenticated={isAuthenticated}
