@@ -34,6 +34,7 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 		localStorage.setItem('user', JSON.stringify(data.user));
 		localStorage.setItem('accessToken', data.accessToken);
 		localStorage.setItem('refreshToken', data.refreshToken);
+		localStorage.setItem('userId', data.user.id);
 		const expiresIn = 50 * 60 * 1000;
 		localStorage.setItem(
 			'expiresAt',
