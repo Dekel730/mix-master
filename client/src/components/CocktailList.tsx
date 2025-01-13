@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import CocktailDisplay from "./CocktailDisplay";
 import { motion } from "framer-motion";
 import Spinner from "./Spinner";
+import { CocktailsData, ICocktail } from "../types/cocktail";
 
 interface CocktailListProps {
-    cocktails: any;
-    setCocktails: React.Dispatch<React.SetStateAction<any>>;
+    cocktails: ICocktail[];
+    setCocktails: React.Dispatch<React.SetStateAction<CocktailsData>>;
     fetchMore: (page: number) => Promise<boolean>;
     pages: number;
 }
@@ -29,7 +30,9 @@ const CocktailList = ({
 
     useEffect(() => {
         if (page === 1) return;
-        getCocktails(page);
+        if (page <= pages && !isLoading) {
+            getCocktails(page);
+        }
     }, [page]);
 
     const handleScroll = () => {
@@ -38,9 +41,7 @@ const CocktailList = ({
             document.documentElement.offsetHeight - 100
         ) {
             if (isLoading) return;
-            if (page < pages) {
-                setPage((prevPage) => prevPage + 1);
-            }
+            setPage((prevPage) => prevPage + 1);
         }
     };
 
@@ -49,10 +50,10 @@ const CocktailList = ({
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const likeUnlike = (cocktail: any) => {
-        setCocktails((prevCocktails: any) => ({
+    const likeUnlike = (cocktail: ICocktail) => {
+        setCocktails((prevCocktails: CocktailsData) => ({
             ...prevCocktails,
-            cocktails: prevCocktails.cocktails.map((prevCocktail: any) =>
+            cocktails: prevCocktails.cocktails.map((prevCocktail: ICocktail) =>
                 prevCocktail._id === cocktail._id ? cocktail : prevCocktail
             ),
         }));
@@ -70,15 +71,15 @@ const CocktailList = ({
             className="md:col-span-2"
         >
             <div className="grid gap-4">
-            {cocktails.map((cocktail: any) => (
-                <div key={cocktail._id}>
-                    <CocktailDisplay
-                        likeUnlike={likeUnlike}
-                        cocktail={cocktail}
-                    />
-                </div>
-            ))}
-        </div>
+                {cocktails.map((cocktail: ICocktail) => (
+                    <div key={cocktail._id}>
+                        <CocktailDisplay
+                            likeUnlike={likeUnlike}
+                            cocktail={cocktail}
+                        />
+                    </div>
+                ))}
+            </div>
             {isLoading && <Spinner />}
         </motion.div>
     );

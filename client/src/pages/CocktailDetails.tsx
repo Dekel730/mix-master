@@ -7,14 +7,14 @@ import { authGet, authPost, getAccessToken } from "../utils/requests";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import LikeButton from "../components/LikeButton";
-import { deleteAuthLocalStorage, getUserPicture } from "../utils/functions";
+import { deleteAuthLocalStorage } from "../utils/functions";
 import { ICocktail, cocktailDefault } from "../types/cocktail";
-import { IComment } from "../types/comment";
-import CommentItem from "../components/CommentItem";
+import { CommentData, defaultCommentData } from "../types/comment";
 import CreateComment from "../components/CreateComment";
 import { FieldValues, useForm } from "react-hook-form";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import CommentList from "../components/CommentList";
 
 const CocktailDisplay: React.FC = () => {
     const [cocktail, setCocktail] = useState<ICocktail>(cocktailDefault);
@@ -22,7 +22,8 @@ const CocktailDisplay: React.FC = () => {
     const postId = useRef<string>("");
     const [loadingComment, setLoadingComment] = useState<string>("");
 
-    const [comments, setComments] = useState<IComment[]>([]);
+    const [commentsData, setCommentsData] =
+        useState<CommentData>(defaultCommentData);
     const [replyingTo, setReplyingTo] = useState<string>("");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -62,7 +63,10 @@ const CocktailDisplay: React.FC = () => {
                 toast.error(message);
             },
             (data) => {
-                setComments((prev) => [...prev, data.comment]);
+                setCommentsData((prev) => ({
+                    ...prev,
+                    comments: [data.comment, ...prev.comments],
+                }));
                 setValue("content", "");
             }
         );
@@ -82,17 +86,18 @@ const CocktailDisplay: React.FC = () => {
                 toast.error(message);
             },
             (data) => {
-                setComments((prev) =>
-                    prev.map((comment) => {
+                setCommentsData((prevData) => ({
+                    ...prevData,
+                    comments: prevData.comments.map((comment) => {
                         if (comment._id === replyingTo) {
                             return {
                                 ...comment,
-                                replies: [...comment.replies, data.comment],
+                                replies: [data.comment, ...comment.replies],
                             };
                         }
                         return comment;
-                    })
-                );
+                    }),
+                }));
                 setValueReply("content", "");
                 setReplyingTo("");
             }
@@ -126,22 +131,21 @@ const CocktailDisplay: React.FC = () => {
             {},
             (message) => toast.error(message),
             () => {
-                setComments((prev) =>
-                    prev.map((comment) => {
-                        if (comment._id === commentId) {
-                            const updatedLikes = comment.likes.includes(
-                                user._id
-                            )
-                                ? comment.likes.filter((id) => id !== user._id)
-                                : [...comment.likes, user._id];
+                setCommentsData((prev) => ({
+                    ...prev,
+                    comments: prev.comments.map((comment) => {
+                        if (comment._id === commentId)
                             return {
                                 ...comment,
-                                likes: updatedLikes,
+                                likes: comment.likes.includes(user._id)
+                                    ? comment.likes.filter(
+                                          (id) => id !== user._id
+                                      )
+                                    : [...comment.likes, user._id],
                             };
-                        }
                         return comment;
-                    })
-                );
+                    }),
+                }));
             }
         );
     };
@@ -152,8 +156,9 @@ const CocktailDisplay: React.FC = () => {
             {},
             (message) => toast.error(message),
             () => {
-                setComments((prev) =>
-                    prev.map((comment) => {
+                setCommentsData((prev) => ({
+                    ...prev,
+                    comments: prev.comments.map((comment) => {
                         const updatedReplies = comment.replies.map((reply) => {
                             if (reply._id === replyId)
                                 return {
@@ -170,8 +175,8 @@ const CocktailDisplay: React.FC = () => {
                             ...comment,
                             replies: updatedReplies,
                         };
-                    })
-                );
+                    }),
+                }));
             }
         );
     };
@@ -192,16 +197,23 @@ const CocktailDisplay: React.FC = () => {
         );
     };
 
-    const getComments = async () => {
+    const getComments = async (page?: number) => {
+        let result = false;
         await authGet(
-            `/comment/${id}`,
+            `/comment/${id}?page=${page || 1}`,
             (message) => {
                 toast.error(message);
             },
             (data) => {
-                setComments(data.comments);
+                setCommentsData({
+                    comments: [...commentsData.comments, ...data.comments],
+                    count: data.count,
+                    pages: data.pages,
+                });
+                result = true;
             }
         );
+        return result;
     };
 
     const getData = async () => {
@@ -323,99 +335,20 @@ const CocktailDisplay: React.FC = () => {
                                 errors={errors}
                             />
                         </form>
-                        <div className="ml-8">
-                            {comments.map((comment) => (
-                                <div
-                                    key={comment._id}
-                                    className="mb-6 border-b border-gray-600 pb-6"
-                                >
-                                    <CommentItem
-                                        comment={comment}
-                                        openReply={replyingTo}
-                                        reply={setReplyingTo}
-                                        user={user}
-                                        commentLike={handleCommentLike}
-                                    />
-                                    {replyingTo === comment._id && (
-                                        <form
-                                            className="mt-4"
-                                            onSubmit={handleSubmitReply(
-                                                handleReplySubmit
-                                            )}
-                                        >
-                                            <CreateComment
-                                                user={user}
-                                                id={comment._id}
-                                                loadingComment={loadingComment}
-                                                field="content"
-                                                placeholder="Write a reply..."
-                                                register={registerReply}
-                                                errors={errorsReply}
-                                            />
-                                        </form>
-                                    )}
-                                    {comment.replies.length > 0 && (
-                                        <div className="mt-4">
-                                            {comment.replies.map(
-                                                (reply: IComment) => (
-                                                    <div
-                                                        key={reply._id}
-                                                        className="ml-8 mb-4 flex-col items-center p-4 bg-[#2a2a2a] rounded-xl shadow-md"
-                                                    >
-                                                        <div className="flex items-center">
-                                                            <img
-                                                                src={getUserPicture(
-                                                                    reply.user
-                                                                )} // תמונת המשתמש בתשובה
-                                                                alt={
-                                                                    reply.user
-                                                                        ._id
-                                                                }
-                                                                className="w-8 h-8 rounded-full mr-2"
-                                                            />
-                                                            <div>
-                                                                <div className="font-semibold text-white">
-                                                                    {
-                                                                        comment
-                                                                            .user
-                                                                            .f_name
-                                                                    }{" "}
-                                                                    {
-                                                                        comment
-                                                                            .user
-                                                                            .l_name
-                                                                    }
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <p className="text-gray-400 ml-8 mt-2">
-                                                            {reply.content}
-                                                        </p>
-                                                        <div className="mt-2">
-                                                            <LikeButton
-                                                                itemId={
-                                                                    reply._id
-                                                                }
-                                                                likeAction={
-                                                                    handleReplyLike
-                                                                }
-                                                                likeCount={
-                                                                    reply.likes
-                                                                        .length
-                                                                }
-                                                                isLiked={reply.likes.includes(
-                                                                    user._id
-                                                                )}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                )
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                        <CommentList
+                            comments={commentsData.comments}
+                            loadingComment={loadingComment}
+                            fetchMore={getComments}
+                            pages={commentsData.pages}
+                            replyingTo={replyingTo}
+                            handleSubmitReply={handleSubmitReply}
+                            handleCommentLike={handleCommentLike}
+                            handleReplyLike={handleReplyLike}
+                            handleReplySubmit={handleReplySubmit}
+                            registerReply={registerReply}
+                            errorsReply={errorsReply}
+                            setReplyingTo={setReplyingTo}
+                        />
                     </div>
                 </div>
             </div>

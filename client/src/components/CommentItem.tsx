@@ -3,6 +3,7 @@ import { IComment } from "../types/comment";
 import { getUserPicture } from "../utils/functions";
 import LikeButton from "./LikeButton";
 import { UserPost } from "../types/user";
+import { useNavigate } from "react-router-dom";
 
 interface CommentItemProps {
     comment: IComment;
@@ -26,15 +27,26 @@ const CommentItem: React.FC<CommentItemProps> = ({
         }
         reply(commentId);
     };
+
+    const navigate = useNavigate();
+
+    const handleProfileClick = (userId: string) => {
+        navigate(`/user/${userId}`);
+    };
+
     return (
         <div className="p-4 bg-[#2a2a2a] rounded-xl shadow-md">
             <div className="flex items-center mb-2">
                 <img
                     src={getUserPicture(comment.user)}
                     alt={comment.user._id}
-                    className="w-10 h-10 rounded-full mr-2"
+                    className="w-10 h-10 rounded-full mr-2 cursor-pointer"
+                    onClick={() => handleProfileClick(comment.user._id)}
                 />
-                <div className="font-semibold text-white">
+                <div
+                    className="font-semibold text-white hover:text-red-500 hover:underline cursor-pointer"
+                    onClick={() => handleProfileClick(comment.user._id)} 
+                >
                     {comment.user.f_name} {comment.user.l_name}
                 </div>
             </div>
@@ -52,7 +64,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 >
                     Reply
                 </button>
-                <span className="text-gray-500">
+                <span className="text-gray-500" >
                     {comment.replies.length} Replies
                 </span>
             </div>

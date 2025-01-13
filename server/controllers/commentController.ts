@@ -73,6 +73,12 @@ export const getCommentsByPost = asyncHandler(
         const pageN: number = page ? Number(page) : 1;
 
         const skip = (pageN - 1) * MAX_COMMENTS_LIMIT;
+        const count: number = await Comment.find({
+            post: postId,
+            parentComment: null,
+        }).countDocuments();
+
+        const pages = Math.ceil(count / MAX_COMMENTS_LIMIT);
 
         const comments = await Comment.find({
             post: postId,
@@ -89,7 +95,7 @@ export const getCommentsByPost = asyncHandler(
                 },
             });
 
-        res.status(200).json({ success: true, comments });
+        res.status(200).json({ success: true, comments, count, pages });
     }
 );
 

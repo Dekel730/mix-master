@@ -4,13 +4,14 @@ import IconMenu from "./IconMenu";
 import TimeAgo from "javascript-time-ago";
 import { Link, useNavigate } from "react-router-dom";
 import { Carousel } from "react-responsive-carousel";
-import LikeButton from "./LikeButton"; // ייבוא של הקומפוננטה החדשה
+import LikeButton from "./LikeButton"; 
 import { authPost } from "../utils/requests";
 import { toast } from "react-toastify";
+import { ICocktail } from "../types/cocktail";
 
 interface CocktailDisplayProps {
-    cocktail: any;
-    likeUnlike: (cocktail: any) => void;
+    cocktail: ICocktail;
+    likeUnlike: (cocktail: ICocktail) => void;
 }
 
 const CocktailDisplay = ({ cocktail, likeUnlike }: CocktailDisplayProps) => {
