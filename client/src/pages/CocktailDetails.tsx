@@ -15,6 +15,7 @@ import { FieldValues, useForm } from "react-hook-form";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import CommentList from "../components/CommentList";
+import ItemUser from "../components/ItemUser";
 
 const CocktailDisplay: React.FC = () => {
     const [cocktail, setCocktail] = useState<ICocktail>(cocktailDefault);
@@ -247,6 +248,12 @@ const CocktailDisplay: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#1a1a1a] text-white p-4">
             <div className="max-w-4xl mx-auto bg-[#212121] rounded-3xl shadow-xl overflow-hidden">
+                <div className="p-4 flex items-center">
+                    <ItemUser
+                        user={cocktail.user}
+                        createdAt={cocktail.createdAt}
+                    />
+                </div>
                 <Carousel
                     showThumbs={false}
                     showStatus={false}

@@ -4,9 +4,7 @@ import Spinner from "./Spinner";
 import { IComment } from "../types/comment";
 import CommentItem from "./CommentItem";
 import CreateComment from "./CreateComment";
-import { getUserPicture } from "../utils/functions";
 import LikeButton from "./LikeButton";
-import { useNavigate } from "react-router-dom";
 import { UserPost } from "../types/user";
 import {
     FieldErrors,
@@ -14,6 +12,7 @@ import {
     UseFormHandleSubmit,
     UseFormRegister,
 } from "react-hook-form";
+import ItemUser from "./ItemUser";
 
 interface CommentListProps {
     comments: IComment[];
@@ -46,7 +45,6 @@ const CommentList = ({
 }: CommentListProps) => {
     const [page, setPage] = useState<number>(1);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const navigate = useNavigate();
     const user: UserPost = JSON.parse(localStorage.getItem("user") || "{}");
 
     const getComments = async (page: number) => {
@@ -79,10 +77,6 @@ const CommentList = ({
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
-
-    const handleProfileClick = (userId: string) => {
-        navigate(`/user/${userId}`);
-    };
 
     return (
         <motion.div
@@ -130,25 +124,11 @@ const CommentList = ({
                                     key={reply._id}
                                     className="ml-8 mb-4 flex-col items-center p-4 bg-[#2a2a2a] rounded-xl shadow-md"
                                 >
-                                    <div className="flex items-center ">
-                                        <img
-                                            src={getUserPicture(reply.user)}
-                                            alt={reply.user._id}
-                                            className="w-8 h-8 rounded-full mr-2"
+                                    <div className="p-4 flex items-center">
+                                        <ItemUser
+                                            user={reply.user}
+                                            createdAt={reply.createdAt}
                                         />
-                                        <div>
-                                            <div
-                                                className="font-semibold text-white hover:text-red-500 hover:underline cursor-pointer"
-                                                onClick={() =>
-                                                    handleProfileClick(
-                                                        reply.user._id
-                                                    )
-                                                }
-                                            >
-                                                {reply.user.f_name}{" "}
-                                                {reply.user.l_name}
-                                            </div>
-                                        </div>
                                     </div>
                                     <p className="text-gray-400 ml-8 mt-2">
                                         {reply.content}
