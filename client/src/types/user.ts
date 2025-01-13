@@ -33,6 +33,14 @@ export interface Device {
 	type: string;
 }
 
+export interface UserPost {
+	_id: string;
+	gender: string;
+	f_name: string;
+	l_name: string;
+	picture: string;
+}
+
 export interface IUserSettings {
 	f_name: string;
 	l_name: string;

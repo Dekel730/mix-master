@@ -1,8 +1,9 @@
-import Comment from "../models/commentModel";
+import Comment, { CommentDocument } from "../models/commentModel";
 import asyncHandler from "express-async-handler";
 import { Request, Response, NextFunction } from "express";
 import Post from "../models/postModel";
 import { MAX_COMMENTS_LIMIT } from "../utils/consts";
+import { Schema } from "mongoose";
 
 // Create Comment
 export const createComment = asyncHandler(
@@ -27,9 +28,10 @@ export const createComment = asyncHandler(
             throw new Error("Post not found");
         }
 
+        let parentCommentDocument: CommentDocument | null = null;
         if (parentComment) {
-            const parent = await Comment.findById(parentComment);
-            if (!parent) {
+            parentCommentDocument = await Comment.findById(parentComment);
+            if (!parentCommentDocument) {
                 res.status(404);
                 throw new Error("Parent comment not found");
             }
@@ -40,7 +42,21 @@ export const createComment = asyncHandler(
             post: postId,
             content,
             parentComment,
+        }).then((comment) => {
+            return comment.populate("user", "f_name l_name gender picture");
         });
+
+        if (parentCommentDocument) {
+            parentCommentDocument!.replies.push(
+                newComment._id as unknown as Schema.Types.ObjectId
+            );
+            await parentCommentDocument!.save();
+        } else {
+            post.comments.push(
+                newComment._id as unknown as Schema.Types.ObjectId
+            );
+            await post.save();
+        }
 
         res.status(201).json({
             success: true,
@@ -58,9 +74,20 @@ export const getCommentsByPost = asyncHandler(
 
         const skip = (pageN - 1) * MAX_COMMENTS_LIMIT;
 
-        const comments = await Comment.find({ post: postId })
+        const comments = await Comment.find({
+            post: postId,
+            parentComment: null,
+        })
             .skip(skip)
-            .limit(MAX_COMMENTS_LIMIT);
+            .limit(MAX_COMMENTS_LIMIT)
+            .populate("user", "f_name l_name picture gender")
+            .populate({
+                path: "replies",
+                populate: {
+                    path: "user",
+                    select: "f_name l_name picture gender likes",
+                },
+            });
 
         res.status(200).json({ success: true, comments });
     }

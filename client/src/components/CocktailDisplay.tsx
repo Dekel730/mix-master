@@ -5,6 +5,8 @@ import TimeAgo from "javascript-time-ago";
 import { Link, useNavigate } from "react-router-dom";
 import { Carousel } from "react-responsive-carousel";
 import LikeButton from "./LikeButton"; // ייבוא של הקומפוננטה החדשה
+import { authPost } from "../utils/requests";
+import { toast } from "react-toastify";
 
 interface CocktailDisplayProps {
     cocktail: any;
@@ -37,6 +39,25 @@ const CocktailDisplay = ({ cocktail, likeUnlike }: CocktailDisplayProps) => {
         },
     ];
 
+    const handlePostLike = async (postId: string) => {
+        await authPost(
+            `/post/${postId}/like`,
+            {},
+            (message) => toast.error(message), // אם יש טעות, מציגים הודעה
+            () => {
+                likeUnlike({
+                    ...cocktail,
+                    likes: cocktail.likes.includes(user._id)
+                        ? cocktail.likes.filter((id: string) => id !== user._id)
+                        : [...cocktail.likes, user._id],
+                    likeCount: cocktail.likes.includes(user._id)
+                        ? cocktail.likeCount - 1
+                        : cocktail.likeCount + 1,
+                });
+            }
+        );
+    };
+
     const goToCocktail = () => {
         navigate(`/cocktail/${cocktail._id}`);
     };
@@ -46,17 +67,6 @@ const CocktailDisplay = ({ cocktail, likeUnlike }: CocktailDisplayProps) => {
     ) => {
         e.stopPropagation();
         navigate(`/user/${cocktail.user._id}`);
-    };
-
-    const handleLikeChange = (updatedCocktail: {
-        likes: string[];
-        likeCount: number;
-    }) => {
-        likeUnlike({
-            ...cocktail,
-            likes: updatedCocktail.likes,
-            likeCount: updatedCocktail.likeCount,
-        });
     };
 
     return (
@@ -120,9 +130,9 @@ const CocktailDisplay = ({ cocktail, likeUnlike }: CocktailDisplayProps) => {
                 <div className="flex items-center space-x-4">
                     <LikeButton
                         itemId={cocktail._id}
-                        initialLikes={cocktail.likes}
-                        initialLikeCount={cocktail.likeCount}
-                        onLikeChange={handleLikeChange} // עדכון נתוני הלייק
+                        likeAction={handlePostLike}
+                        likeCount={cocktail.likes.length}
+                        isLiked={cocktail.likes.includes(user._id)}
                     />
                     <button
                         onClick={goToCocktail}

@@ -1,141 +1,182 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaGlassMartiniAlt, FaListUl, FaComment } from "react-icons/fa";
 import { Carousel } from "react-responsive-carousel";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import Loader from "../components/Loader";
-import { authGet } from "../utils/requests";
+import { authGet, authPost, getAccessToken } from "../utils/requests";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import LikeButton from "../components/LikeButton";
-import { BsSendFill } from "react-icons/bs";
-import { getUserPicture } from "../utils/functions";
-
-interface Comment {
-    id: number;
-    user: string;
-    userImage: string;
-    text: string;
-    likes: number;
-    replies: Reply[];
-}
-
-interface Reply {
-    id: number;
-    user: string;
-    userImage: string;
-    text: string;
-}
+import { deleteAuthLocalStorage, getUserPicture } from "../utils/functions";
+import { ICocktail, cocktailDefault } from "../types/cocktail";
+import { IComment } from "../types/comment";
+import CommentItem from "../components/CommentItem";
+import CreateComment from "../components/CreateComment";
+import { FieldValues, useForm } from "react-hook-form";
+import z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const CocktailDisplay: React.FC = () => {
-    const [cocktail, setCocktail] = useState<{
-        _id: string;
-        title: string;
-        description: string;
-        ingredients: { amount: string; name: string }[];
-        instructions: string[];
-        images: string[];
-        likes: string[]; // מוסיפים את מערך הלייקים
-        likeCount: number; // סופר הלייקים
-        commentCount: number; // סופר התגובות
-    }>({
-        _id: "",
-        title: "",
-        description: "",
-        ingredients: [],
-        instructions: [],
-        images: [],
-        likes: [],
-        likeCount: 0,
-        commentCount: 0,
-    });
+    const [cocktail, setCocktail] = useState<ICocktail>(cocktailDefault);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const postId = useRef<string>("");
+    const [loadingComment, setLoadingComment] = useState<string>("");
 
-    const [comments, setComments] = useState<Comment[]>([
-        {
-            id: 1,
-            user: "CocktailLover",
-            userImage: "/placeholder.svg?height=40&width=40&text=CL",
-            text: "This looks amazing! Can't wait to try it.",
-            likes: 5,
-            replies: [
-                {
-                    id: 1,
-                    user: "MixMaster",
-                    userImage: "/placeholder.svg?height=40&width=40&text=MM",
-                    text: "Thank you! Let me know how it turns out.",
-                },
-                {
-                    id: 2,
-                    user: "NewbieMixer",
-                    userImage: "/placeholder.svg?height=40&width=40&text=NM",
-                    text: "I made this last night, it was delicious!",
-                },
-            ],
-        },
-        {
-            id: 2,
-            user: "TropicalFan",
-            //userImage: "/placeholder.svg?height=40&width=40&text=TF",
-            userImage: "https://example.com/images/users/cocktaillover.png",
-            text: "Perfect for a beach day!",
-            likes: 3,
-            replies: [],
-        },
-    ]);
-    const [newComment, setNewComment] = useState("");
-    const [replyingTo, setReplyingTo] = useState<number | null>(null);
-    const [newReply, setNewReply] = useState("");
+    const [comments, setComments] = useState<IComment[]>([]);
+    const [replyingTo, setReplyingTo] = useState<string>("");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
     const { id } = useParams<{ id: string }>();
 
-    const handleCommentSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newComment.trim()) {
-            setComments([
-                ...comments,
-                {
-                    id: comments.length + 1,
-                    user: "CurrentUser",
-                    userImage:
-                        "https://example.com/images/users/cocktaillover.png",
-                    text: newComment,
-                    likes: 0,
-                    replies: [],
-                },
-            ]);
-            setNewComment("");
-        }
+    const commentSchema = z.object({
+        content: z.string().min(1, "Comment must be at least 1 character."),
+    });
+
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        formState: { errors },
+    } = useForm({ resolver: zodResolver(commentSchema) });
+
+    const replySchema = z.object({
+        content: z.string().min(1, "Reply must be at least 1 character."),
+    });
+
+    const {
+        register: registerReply,
+        handleSubmit: handleSubmitReply,
+        setValue: setValueReply,
+        formState: { errors: errorsReply },
+    } = useForm({ resolver: zodResolver(replySchema) });
+
+    const handleCommentSubmit = async (data: FieldValues) => {
+        setLoadingComment("newComment");
+        await authPost(
+            "/comment",
+            {
+                content: data.content,
+                postId: id,
+            },
+            (message) => {
+                toast.error(message);
+            },
+            (data) => {
+                setComments((prev) => [...prev, data.comment]);
+                setValue("content", "");
+            }
+        );
+        setLoadingComment("");
     };
 
-    const handleReplySubmit = (commentId: number) => {
-        if (newReply.trim()) {
-            setComments(
-                comments.map((comment) =>
-                    comment.id === commentId
-                        ? {
-                              ...comment,
-                              replies: [
-                                  ...comment.replies,
-                                  {
-                                      id: comment.replies.length + 1,
-                                      user: "CurrentUser",
-                                      userImage:
-                                          "/placeholder.svg?height=40&width=40&text=CU", // כאן מוסיפים את תמונת המשתמש
-                                      text: newReply,
-                                  },
-                              ],
-                          }
-                        : comment
-                )
-            );
-            setNewReply("");
-            setReplyingTo(null);
-        }
+    const handleReplySubmit = async (data: FieldValues) => {
+        setLoadingComment(replyingTo!);
+        await authPost(
+            "/comment",
+            {
+                content: data.content,
+                postId: id,
+                parentComment: replyingTo,
+            },
+            (message) => {
+                toast.error(message);
+            },
+            (data) => {
+                setComments((prev) =>
+                    prev.map((comment) => {
+                        if (comment._id === replyingTo) {
+                            return {
+                                ...comment,
+                                replies: [...comment.replies, data.comment],
+                            };
+                        }
+                        return comment;
+                    })
+                );
+                setValueReply("content", "");
+                setReplyingTo("");
+            }
+        );
+        setLoadingComment("");
+    };
+
+    const handlePostLike = async (postId: string) => {
+        await authPost(
+            `/post/${postId}/like`,
+            {},
+            (message) => toast.error(message), // אם יש טעות, מציגים הודעה
+            () => {
+                setCocktail((prev) => {
+                    const updatedLikes = prev.likes.includes(user._id)
+                        ? prev.likes.filter((id) => id !== user._id) // אם המשתמש כבר לייק, מבצעים הסרה
+                        : [...prev.likes, user._id]; // אחרת, מוסיפים את המשתמש ללייקים
+                    return {
+                        ...prev,
+                        likes: updatedLikes,
+                        likeCount: updatedLikes.length,
+                    };
+                });
+            }
+        );
+    };
+
+    const handleCommentLike = async (commentId: string) => {
+        await authPost(
+            `/comment/${commentId}/like`,
+            {},
+            (message) => toast.error(message),
+            () => {
+                setComments((prev) =>
+                    prev.map((comment) => {
+                        if (comment._id === commentId) {
+                            const updatedLikes = comment.likes.includes(
+                                user._id
+                            )
+                                ? comment.likes.filter((id) => id !== user._id)
+                                : [...comment.likes, user._id];
+                            return {
+                                ...comment,
+                                likes: updatedLikes,
+                            };
+                        }
+                        return comment;
+                    })
+                );
+            }
+        );
+    };
+
+    const handleReplyLike = async (replyId: string) => {
+        await authPost(
+            `/comment/${replyId}/like`,
+            {},
+            (message) => toast.error(message),
+            () => {
+                setComments((prev) =>
+                    prev.map((comment) => {
+                        const updatedReplies = comment.replies.map((reply) => {
+                            if (reply._id === replyId)
+                                return {
+                                    ...reply,
+                                    likes: reply.likes.includes(user._id)
+                                        ? reply.likes.filter(
+                                              (id) => id !== user._id
+                                          )
+                                        : [...reply.likes, user._id],
+                                };
+                            return reply;
+                        });
+                        return {
+                            ...comment,
+                            replies: updatedReplies,
+                        };
+                    })
+                );
+            }
+        );
     };
 
     const getCocktail = async () => {
-        setIsLoading(true);
         await authGet(
             `/post/${id}`,
             (message) => {
@@ -149,14 +190,41 @@ const CocktailDisplay: React.FC = () => {
                 }
             }
         );
+    };
+
+    const getComments = async () => {
+        await authGet(
+            `/comment/${id}`,
+            (message) => {
+                toast.error(message);
+            },
+            (data) => {
+                setComments(data.comments);
+            }
+        );
+    };
+
+    const getData = async () => {
+        setIsLoading(true);
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+            toast.error("Please login to continue");
+            deleteAuthLocalStorage();
+            return;
+        }
+        const promises = [getCocktail(), getComments()];
+        await Promise.all(promises);
         setIsLoading(false);
     };
 
     useEffect(() => {
-        if (id) {
-            getCocktail();
-        } else {
-            toast.error("Invalid cocktail ID.");
+        if (id !== postId.current) {
+            postId.current = id!;
+            if (id) {
+                getData();
+            } else {
+                toast.error("Invalid cocktail ID.");
+            }
         }
     }, [id]);
 
@@ -200,15 +268,9 @@ const CocktailDisplay: React.FC = () => {
                     <div className="mt-6 flex items-center">
                         <LikeButton
                             itemId={cocktail._id}
-                            initialLikes={cocktail.likes}
-                            initialLikeCount={cocktail.likeCount}
-                            onLikeChange={(updatedCocktail) => {
-                                setCocktail({
-                                    ...cocktail,
-                                    likes: updatedCocktail.likes,
-                                    likeCount: updatedCocktail.likeCount,
-                                });
-                            }}
+                            likeAction={handlePostLike}
+                            likeCount={cocktail.likes.length}
+                            isLiked={cocktail.likes.includes(user._id)}
                         />
                         <button className="ml-4 flex items-center transition-colors cursor-default">
                             <FaComment className="mr-2" />
@@ -247,106 +309,108 @@ const CocktailDisplay: React.FC = () => {
 
                     <div className="mt-8">
                         <h2 className="text-2xl font-bold mb-4">Comments</h2>
-                        <form onSubmit={handleCommentSubmit} className="mb-4">
-                            <div className="flex items-center">
-                                <img
-                                    src={getUserPicture(user)}
-                                    alt="Current User"
-                                    className="w-10 h-10 rounded-full mr-2"
-                                />
-                                <div className="flex-grow">
-                                    <input
-                                        type="text"
-                                        value={newComment}
-                                        onChange={(e) =>
-                                            setNewComment(e.target.value)
-                                        }
-                                        placeholder="Write a comment..."
-                                        className="w-full bg-[#1a1a1a] text-white h-12 rounded-xl px-4 outline-none focus:ring-2 focus:ring-gray-500 transition-all"
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    className="bg-[#D93025] hover:bg-[#bf2b1a] text-white py-2 px-6 rounded-xl ml-2 flex items-center justify-center"
-                                >
-                                    <BsSendFill size={20} />
-                                </button>
-                            </div>
+                        <form
+                            onSubmit={handleSubmit(handleCommentSubmit)}
+                            className="mb-4"
+                        >
+                            <CreateComment
+                                user={user}
+                                id="newComment"
+                                loadingComment={loadingComment}
+                                field="content"
+                                placeholder="Write a comment..."
+                                register={register}
+                                errors={errors}
+                            />
                         </form>
-                        <div>
+                        <div className="ml-8">
                             {comments.map((comment) => (
                                 <div
-                                    key={comment.id}
+                                    key={comment._id}
                                     className="mb-6 border-b border-gray-600 pb-6"
                                 >
-                                    <div className="flex items-center mb-2">
-                                        <img
-                                            src={comment.userImage}
-                                            alt={comment.user}
-                                            className="w-10 h-10 rounded-full mr-2"
-                                        />
-                                        <div className="font-semibold text-white">
-                                            {comment.user}
-                                        </div>
-                                    </div>
-                                    <p className="text-gray-400 mb-4">
-                                        {comment.text}
-                                    </p>
-                                    <div className="flex items-center text-gray-500">
-                                        <button
-                                            className="mr-4"
-                                            onClick={() =>
-                                                setReplyingTo(comment.id)
-                                            }
+                                    <CommentItem
+                                        comment={comment}
+                                        openReply={replyingTo}
+                                        reply={setReplyingTo}
+                                        user={user}
+                                        commentLike={handleCommentLike}
+                                    />
+                                    {replyingTo === comment._id && (
+                                        <form
+                                            className="mt-4"
+                                            onSubmit={handleSubmitReply(
+                                                handleReplySubmit
+                                            )}
                                         >
-                                            Reply
-                                        </button>
-                                        <span>{comment.likes} Likes</span>
-                                    </div>
-                                    {replyingTo === comment.id && (
-                                        <div className="mt-4 flex">
-                                            <textarea
-                                                value={newReply}
-                                                onChange={(e) =>
-                                                    setNewReply(e.target.value)
-                                                }
+                                            <CreateComment
+                                                user={user}
+                                                id={comment._id}
+                                                loadingComment={loadingComment}
+                                                field="content"
                                                 placeholder="Write a reply..."
-                                                className="w-full bg-[#1a1a1a] text-white h-12 rounded-l-xl px-4 outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+                                                register={registerReply}
+                                                errors={errorsReply}
                                             />
-                                            <button
-                                                onClick={() =>
-                                                    handleReplySubmit(
-                                                        comment.id
-                                                    )
-                                                }
-                                                className="bg-[#D93025] hover:bg-[#bf2b1a] text-white py-2 px-6 rounded-r-xl"
-                                            >
-                                                Reply
-                                            </button>
-                                        </div>
+                                        </form>
                                     )}
                                     {comment.replies.length > 0 && (
                                         <div className="mt-4">
-                                            {comment.replies.map((reply) => (
-                                                <div
-                                                    key={reply.id}
-                                                    className="ml-8 mb-4 flex items-center"
-                                                >
-                                                    <img
-                                                        src={reply.userImage} // תמונת המשתמש בתשובה
-                                                        alt={reply.user}
-                                                        className="w-8 h-8 rounded-full mr-2"
-                                                    />
-                                                    <div>
-                                                        <div className="font-semibold text-white">
-                                                            {reply.user}
+                                            {comment.replies.map(
+                                                (reply: IComment) => (
+                                                    <div
+                                                        key={reply._id}
+                                                        className="ml-8 mb-4 flex-col items-center p-4 bg-[#2a2a2a] rounded-xl shadow-md"
+                                                    >
+                                                        <div className="flex items-center">
+                                                            <img
+                                                                src={getUserPicture(
+                                                                    reply.user
+                                                                )} // תמונת המשתמש בתשובה
+                                                                alt={
+                                                                    reply.user
+                                                                        ._id
+                                                                }
+                                                                className="w-8 h-8 rounded-full mr-2"
+                                                            />
+                                                            <div>
+                                                                <div className="font-semibold text-white">
+                                                                    {
+                                                                        comment
+                                                                            .user
+                                                                            .f_name
+                                                                    }{" "}
+                                                                    {
+                                                                        comment
+                                                                            .user
+                                                                            .l_name
+                                                                    }
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <p className="text-gray-400">
-                                                            {reply.text}
+                                                        <p className="text-gray-400 ml-8 mt-2">
+                                                            {reply.content}
                                                         </p>
+                                                        <div className="mt-2">
+                                                            <LikeButton
+                                                                itemId={
+                                                                    reply._id
+                                                                }
+                                                                likeAction={
+                                                                    handleReplyLike
+                                                                }
+                                                                likeCount={
+                                                                    reply.likes
+                                                                        .length
+                                                                }
+                                                                isLiked={reply.likes.includes(
+                                                                    user._id
+                                                                )}
+                                                            />
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                )
+                                            )}
                                         </div>
                                     )}
                                 </div>
