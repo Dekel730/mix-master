@@ -200,14 +200,14 @@ const CocktailForm = ({
 					(instruction, instructionIndex) => (
 						<div
 							key={instruction.id}
-							className="flex w-full mb-2 space-x-2 bg-[#2a2a2a] p-4 rounded-lg items-start"
+							className="flex w-full mb-2 space-x-2 bg-[#2a2a2a] p-4 rounded-lg items-center"
 						>
 							<TextArea<IForm>
 								register={register}
 								errors={errors}
 								autoExpand={true}
 								containerClassNames="flex-1 justify-center"
-								height="h-12"
+								height="h-17"
 								classNames="p-0 pb-0"
 								field={`instructions.${instructionIndex}.name`}
 								placeholder={`Step ${instructionIndex + 1}`}

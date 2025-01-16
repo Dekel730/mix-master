@@ -5,6 +5,7 @@ import {
 	Path,
 	UseFormRegister,
 } from 'react-hook-form';
+import { getError } from '../../utils/functions';
 
 interface TextAreaProps<TFieldValues extends FieldValues> {
 	field: Path<TFieldValues>;
@@ -61,9 +62,11 @@ const TextArea = <TFieldValues extends FieldValues>({
 					placeholder={placeholder}
 					defaultValue={defaultValue}
 					className={`w-full bg-[#1a1a1a] ${
-						errors[field] ? 'ring-2 ring-red-500' : ''
+						getError(field, errors) ? 'ring-2 ring-red-500' : ''
 					} text-white ${height} rounded-xl pl-10 pr-4 pt-3 pb-8 outline-none focus:ring-2 focus:${
-						errors[field] ? 'ring-red-500' : 'ring-gray-500'
+						getError(field, errors)
+							? 'ring-red-500'
+							: 'ring-gray-500'
 					} transition-all resize-none ${classNames}`}
 				/>
 				{StartIcon && (
@@ -72,7 +75,7 @@ const TextArea = <TFieldValues extends FieldValues>({
 				{children}
 			</div>
 			<span className="text-red-500 text-sm">
-				{errors[field]?.message?.toString()}
+				{getError(field, errors)}
 			</span>
 		</div>
 	);

@@ -1,4 +1,9 @@
-const Spinner = () => {
+interface SpinnerProps {
+	height?: string;
+	width?: string;
+}
+
+const Spinner = ({ height = 'h-6', width = 'w-6' }: SpinnerProps) => {
 	return (
 		<svg
 			version="1.1"
@@ -7,7 +12,7 @@ const Spinner = () => {
 			xmlnsXlink="http://www.w3.org/1999/xlink"
 			x="0px"
 			y="0px"
-			className="w-6 h-6"
+			className={`${height} ${width}`}
 			viewBox="0 0 100 100"
 			enableBackground="new 0 0 0 0"
 			xmlSpace="preserve"

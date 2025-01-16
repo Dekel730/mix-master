@@ -79,6 +79,13 @@ const PostScheme = new mongoose.Schema<IPost>(
 	{ timestamps: true }
 );
 
+PostScheme.index({
+	title: 'text',
+	description: 'text',
+	'ingredients.name': 'text',
+	instructions: 'text',
+});
+
 export default mongoose.model<IPost>('Post', PostScheme);
 
 export interface PostDocument extends IPost, mongoose.Document {}
