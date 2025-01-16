@@ -138,7 +138,7 @@ export const getFeedPosts = asyncHandler(
 
         res.status(200).json({
             success: true,
-            posts,
+            cocktails: posts,
             count,
             pages,
         });

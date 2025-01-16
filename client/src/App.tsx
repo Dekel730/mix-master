@@ -3,11 +3,10 @@ import './App.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Feed from './pages/Feed';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
-import Explore from './pages/Explore';
 import CocktailDetails from './pages/CocktailDetails';
 import CocktailNew from './pages/CocktailNew';
 import ProtectedRoute from './components/routes/ProtectedRoute';
@@ -68,7 +67,7 @@ function App() {
 								<ProtectedRoute
 									isAuthenticated={isAuthenticated}
 								>
-									<Feed />
+									<Home />
 								</ProtectedRoute>
 							}
 						/>
@@ -94,16 +93,6 @@ function App() {
 										setIsAuthenticated={setIsAuthenticated}
 									/>
 								</UserRestrictedRoute>
-							}
-						/>
-						<Route
-							path="/explore"
-							element={
-								<ProtectedRoute
-									isAuthenticated={isAuthenticated}
-								>
-									<Explore />
-								</ProtectedRoute>
 							}
 						/>
 						<Route
