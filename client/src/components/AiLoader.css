@@ -1,0 +1,44 @@
+.aiLoading {
+    position: relative;
+    height: 100px;
+    width: 100px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, transparent, transparent 40%, #e5f303);
+    animation: animate-ai 1s linear infinite;
+}
+.aiLoading:before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    background: #212121;
+    border-radius: 50%;
+    z-index: 99999;
+}
+.aiLoading:after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    background: linear-gradient(45deg, transparent, transparent 40%, #e5f303);
+    border-radius: 50%;
+    filter: blur(30px);
+    z-index: 1;
+}
+
+@keyframes animate-ai {
+    0% {
+        transform: rotate(0deg);
+        filter: hue-rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+        filter: hue-rotate(180deg);
+    }
+}

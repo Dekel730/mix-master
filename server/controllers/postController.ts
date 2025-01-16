@@ -138,7 +138,7 @@ export const getFeedPosts = asyncHandler(
 
 		res.status(200).json({
 			success: true,
-			posts,
+			cocktails: posts,
 			count,
 			pages,
 		});
@@ -196,10 +196,6 @@ export const createWithAI = asyncHandler(
 		const result = await model.generateContent(prompt);
 
 		const resultJSON: IPost = JSON.parse(result.response.text());
-
-		console.log(resultJSON);
-		console.log(resultJSON.ingredients);
-		console.log(resultJSON.instructions);
 
 		// check if the result is valid
 
@@ -264,7 +260,7 @@ export const getUserPosts = asyncHandler(
 
 		res.status(200).json({
 			success: true,
-			posts,
+			cocktails: posts,
 			pages,
 			count,
 		});
@@ -287,7 +283,7 @@ export const deletePost = asyncHandler(
 			throw new Error('You are not authorized to delete this post');
 		}
 
-		await Post.findByIdAndUpdate(postId);
+		await Post.findByIdAndDelete(postId);
 
 		res.status(200).json({
 			success: true,
