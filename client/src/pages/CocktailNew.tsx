@@ -20,9 +20,11 @@ interface UploadedImage {
 
 export default function CreateCocktail() {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [aiLoading, setIsAiLoading] = useState<boolean>(false);
 	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 	const [previewImage, setPreviewImage] = useState<string | null>(null);
 	const [activeOption, setActiveOption] = useState<'manual' | 'ai'>('manual');
+	const [ai, setAi] = useState<boolean>(false);
 
 	const navigate = useNavigate();
 
@@ -64,10 +66,31 @@ export default function CreateCocktail() {
 			.min(1, 'At least one instruction is required'),
 	});
 
+	const aiSchema = z.object({
+		language: z.enum([
+			'English',
+			'Hebrew',
+			'Spanish',
+			'French',
+			'German',
+			'Italian',
+		]),
+		difficulty: z.enum(['easy', 'medium', 'expert']),
+		ingredients: z.array(
+			z.object({
+				name: z
+					.string()
+					.nonempty('Ingredient name is required')
+					.max(50, 'Ingredient name is too long'),
+			})
+		),
+	});
+
 	const {
 		control,
 		register,
 		handleSubmit,
+		setValue,
 		watch,
 		formState: { errors },
 	} = useForm({
@@ -80,7 +103,53 @@ export default function CreateCocktail() {
 		},
 	});
 
+	const {
+		register: registerAI,
+		control: controlAI,
+		watch: watchAI,
+		handleSubmit: handleSubmitAI,
+		formState: { errors: errorsAI },
+	} = useForm({
+		resolver: zodResolver(aiSchema),
+		defaultValues: {
+			language: 'English',
+			difficulty: 'easy',
+			ingredients: [{ name: '' }],
+		},
+	});
+
 	console.log(errors);
+
+	const onAISubmit = async (data: FieldValues) => {
+		setIsAiLoading(true);
+		await authPost(
+			'/post/ai',
+			{
+				...data,
+				ingredients: data.ingredients.map(
+					(ingredient: { name: string }) => ingredient.name
+				),
+			},
+			(message) => {
+				toast.error(message);
+			},
+			(data: any) => {
+				setActiveOption('manual');
+				setValue('title', data.post.title);
+				setValue('description', data.post.description);
+				setValue('ingredients', data.post.ingredients);
+				setValue(
+					'instructions',
+					data.post.instructions.map((instruction: any) => ({
+						name: instruction,
+					}))
+				);
+				setAi(true);
+				toast.success('AI generated cocktail');
+			}
+		);
+		setIsAiLoading(false);
+	};
 
 	const onSubmit = async (data: FieldValues) => {
 		setIsLoading(true);
@@ -96,6 +165,7 @@ export default function CreateCocktail() {
 				)
 			)
 		);
+		formData.append('ai', ai.toString());
 		uploadedImages.forEach((image) => {
 			formData.append('images', image.file);
 		});
@@ -154,7 +224,15 @@ export default function CreateCocktail() {
 						handleSubmit={handleSubmit}
 					/>
 				) : (
-					<AICocktailForm />
+					<AICocktailForm
+						register={registerAI}
+						errors={errorsAI}
+						control={controlAI}
+						handleSubmit={handleSubmitAI}
+						watch={watchAI}
+						onSubmit={onAISubmit}
+						loading={aiLoading}
+					/>
 				)}
 			</div>
 

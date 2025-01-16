@@ -136,109 +136,106 @@ export const getFeedPosts = asyncHandler(
 
         const posts = postsWithCounts(feedPosts);
 
-        res.status(200).json({
-            success: true,
-            posts,
-            count,
-            pages,
-        });
-    }
+		res.status(200).json({
+			success: true,
+			cocktails: posts,
+			count,
+			pages,
+		});
+	}
 );
 
 export const createWithAI = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-        const { language, difficulty, ingredients } = req.body;
-        let ingredients_object = ingredients;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+		const { language, difficulty, ingredients } = req.body;
+		let ingredients_object = ingredients;
 
-        if (!language || !difficulty) {
-            res.status(400);
-            throw new Error("Please fill all required fields");
-        }
+		if (!language || !difficulty) {
+			res.status(400);
+			throw new Error('Please fill all required fields');
+		}
 
-        if (!ingredients) {
-            ingredients_object = [];
-        }
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        title: { type: SchemaType.STRING },
-                        description: { type: SchemaType.STRING },
-                        ingredients: {
-                            type: SchemaType.ARRAY,
-                            items: {
-                                type: SchemaType.OBJECT,
-                                properties: {
-                                    name: { type: SchemaType.STRING },
-                                    amount: {
-                                        type: SchemaType.STRING,
-                                    },
-                                },
-                            },
-                        },
-                        instructions: {
-                            type: SchemaType.ARRAY,
-                            items: {
-                                type: SchemaType.STRING,
-                            },
-                        },
-                    },
-                },
-            },
-        });
-        const prompt = `Create a cocktail recipe that is ${difficulty} difficulty level and includes ${ingredients_object.join(
-            ", "
-        )} in ${language} language in JSON format`;
-        const result = await model.generateContent(prompt);
+		if (!ingredients) {
+			ingredients_object = [];
+		}
+		const model = genAI.getGenerativeModel({
+			model: 'gemini-1.5-flash',
+			generationConfig: {
+				responseMimeType: 'application/json',
+				responseSchema: {
+					type: SchemaType.OBJECT,
+					properties: {
+						title: { type: SchemaType.STRING },
+						description: { type: SchemaType.STRING },
+						ingredients: {
+							type: SchemaType.ARRAY,
+							items: {
+								type: SchemaType.OBJECT,
+								properties: {
+									name: { type: SchemaType.STRING },
+									amount: {
+										type: SchemaType.STRING,
+									},
+								},
+							},
+						},
+						instructions: {
+							type: SchemaType.ARRAY,
+							items: {
+								type: SchemaType.STRING,
+							},
+						},
+					},
+				},
+			},
+		});
+		const prompt = `Create a cocktail recipe that is ${difficulty} difficulty level and includes ${ingredients_object.join(
+			', '
+		)} in ${language} language in JSON format`;
+		const result = await model.generateContent(prompt);
 
-        const resultJSON: IPost = JSON.parse(result.response.text());
+		const resultJSON: IPost = JSON.parse(result.response.text());
 
-        console.log(resultJSON);
-        console.log(resultJSON.ingredients);
-        console.log(resultJSON.instructions);
+		// check if the result is valid
 
-        // check if the result is valid
+		if (
+			!resultJSON.title ||
+			!resultJSON.ingredients ||
+			!resultJSON.instructions
+		) {
+			res.status(400);
+			throw new Error('Failed to generate cocktail1');
+		}
 
-        if (
-            !resultJSON.title ||
-            !resultJSON.ingredients ||
-            !resultJSON.instructions
-        ) {
-            res.status(400);
-            throw new Error("Failed to generate cocktail1");
-        }
+		if (!resultJSON.ingredients.length || !resultJSON.instructions.length) {
+			res.status(400);
+			throw new Error('Failed to generate cocktail2');
+		}
 
-        if (!resultJSON.ingredients.length || !resultJSON.instructions.length) {
-            res.status(400);
-            throw new Error("Failed to generate cocktail2");
-        }
+		if (
+			!resultJSON.ingredients.every(
+				(ingredient: Ingredient) => ingredient.name
+			)
+		) {
+			res.status(400);
+			throw new Error('Failed to generate cocktail3');
+		}
 
-        if (
-            !resultJSON.ingredients.every(
-                (ingredient: Ingredient) => ingredient.name
-            )
-        ) {
-            res.status(400);
-            throw new Error("Failed to generate cocktail3");
-        }
+		if (
+			!resultJSON.instructions.every((instruction: string) => instruction)
+		) {
+			res.status(400);
+			throw new Error('Failed to generate cocktail4');
+		}
 
-        if (
-            !resultJSON.instructions.every((instruction: string) => instruction)
-        ) {
-            res.status(400);
-            throw new Error("Failed to generate cocktail4");
-        }
+		res.status(200).json({
+			success: true,
+			post: resultJSON,
+		});
+	});
 
-        res.status(200).json({
-            success: true,
-            post: resultJSON,
-        });
-    }
-);
+
 
 // Get User Posts
 export const getUserPosts = asyncHandler(
@@ -262,38 +259,39 @@ export const getUserPosts = asyncHandler(
 
         const posts = postsWithCounts(userPosts);
 
-        res.status(200).json({
-            success: true,
-            cocktails: posts,
-            pages,
-            count,
-        });
-    }
+
+		res.status(200).json({
+			success: true,
+			cocktails: posts,
+			pages,
+			count,
+		});
+	}
 );
 
 // Delete Post
 export const deletePost = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { postId } = req.params;
+	async (req: Request, res: Response, next: NextFunction) => {
+		const { postId } = req.params;
 
-        const post = await Post.findById(postId);
-        if (!post) {
-            res.status(404);
-            throw new Error("post not found");
-        }
+		const post = await Post.findById(postId);
+		if (!post) {
+			res.status(404);
+			throw new Error('post not found');
+		}
 
-        if (post.user.toString() !== req.user!.id) {
-            res.status(401);
-            throw new Error("You are not authorized to delete this post");
-        }
+		if (post.user.toString() !== req.user!.id) {
+			res.status(401);
+			throw new Error('You are not authorized to delete this post');
+		}
 
-        await Post.findByIdAndUpdate(postId);
+		await Post.findByIdAndDelete(postId);
 
-        res.status(200).json({
-            success: true,
-            message: "post deleted successfully",
-        });
-    }
+		res.status(200).json({
+			success: true,
+			message: 'post deleted successfully',
+		});
+	}
 );
 
 // Update Post
