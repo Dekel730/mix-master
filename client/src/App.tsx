@@ -106,6 +106,16 @@ function App() {
 							}
 						/>
 						<Route
+							path="/cocktail/:id/edit"
+							element={
+								<ProtectedRoute
+									isAuthenticated={isAuthenticated}
+								>
+									<CocktailNew />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
 							path="/cocktail/:id"
 							element={
 								<ProtectedRoute
