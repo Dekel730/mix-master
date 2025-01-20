@@ -1,18 +1,19 @@
 import { FaUser, FaCog, FaSignOutAlt, FaCocktail } from 'react-icons/fa';
 import { IUserProfile } from '../types/user';
-import { deleteAuthLocalStorage, getUserPicture } from '../utils/functions';
+import { getUserPicture } from '../utils/functions';
 import { Link } from 'react-router-dom';
 import { post } from '../utils/requests';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import IconMenu from './IconMenu';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
 	setIsLoading: (isLoading: boolean) => void;
-	setIsAuthenticated: (isAuthenticated: boolean) => void;
 }
-const Header = ({ setIsLoading, setIsAuthenticated }: HeaderProps) => {
+const Header = ({ setIsLoading }: HeaderProps) => {
 	const navigate = useNavigate();
+	const { logout } = useAuth();
 
 	const user: IUserProfile = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -31,8 +32,7 @@ const Header = ({ setIsLoading, setIsAuthenticated }: HeaderProps) => {
 				Authorization: `Bearer ${localStorage.getItem('refreshToken')}`,
 			}
 		);
-		deleteAuthLocalStorage();
-		setIsAuthenticated(false);
+		logout();
 		setIsLoading(false);
 	};
 

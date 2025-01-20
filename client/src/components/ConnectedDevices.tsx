@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { authGet } from '../utils/requests';
 import { toast } from 'react-toastify';
 import Loader from './Loader';
-import { deleteAuthLocalStorage, formatDate } from '../utils/functions';
+import { formatDate } from '../utils/functions';
 import ThanosSnap from './ThanosSnap';
 import Spinner from './Spinner';
+import { useAuth } from '../context/AuthContext';
 
 interface ConnectedDevicesProps {
 	devices: Device[];
@@ -15,6 +16,7 @@ interface ConnectedDevicesProps {
 
 const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 	const deviceId = localStorage.getItem('device_id') || '';
+	const { logout } = useAuth();
 
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [isLoadingItem, setIsLoadingItem] = useState<string>('');
@@ -37,15 +39,13 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 		setIsLoadingItem(id);
 		await authGet(
 			`/user/disconnect/${id}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
-				if (deviceId === id) {
-					deleteAuthLocalStorage();
-					toast.info('This device has been disconnected');
-					return;
-				}
 				setIsDisintegrating(id);
 				setTimeout(() => {
 					setIsDisintegrating('');
@@ -55,6 +55,10 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 							(device) => device.device_id !== id
 						),
 					}));
+					if (deviceId === id) {
+						toast.info('This device has been disconnected');
+						logout();
+					}
 				}, 2500);
 			}
 		);
@@ -65,12 +69,15 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 		setIsLoading(true);
 		await authGet(
 			`/user/disconnect`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
-				deleteAuthLocalStorage();
 				toast.info('All devices have been disconnected');
+				logout();
 			}
 		);
 		setIsLoading(false);

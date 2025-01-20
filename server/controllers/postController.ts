@@ -155,6 +155,10 @@ export const createWithAI = asyncHandler(
 			res.status(400);
 			throw new Error('Please fill all required fields');
 		}
+		if (!language || !difficulty) {
+			res.status(400);
+			throw new Error('Please fill all required fields');
+		}
 
 		if (!ingredients) {
 			ingredients_object = [];
@@ -194,9 +198,12 @@ export const createWithAI = asyncHandler(
 			', '
 		)} in ${language} language in JSON format`;
 		const result = await model.generateContent(prompt);
-
+		if (!ingredients) {
+			ingredients_object = [];
+		}
 		const resultJSON: IPost = JSON.parse(result.response.text());
 
+		// check if the result is valid
 		// check if the result is valid
 
 		if (
@@ -233,9 +240,8 @@ export const createWithAI = asyncHandler(
 			success: true,
 			post: resultJSON,
 		});
-	});
-
-
+	}
+);
 
 // Get User Posts
 export const getUserPosts = asyncHandler(
@@ -258,7 +264,6 @@ export const getUserPosts = asyncHandler(
 		const pages = Math.ceil(count / POSTS_PAGE_SIZE);
 
 		const posts = postsWithCounts(userPosts);
-
 
 		res.status(200).json({
 			success: true,
@@ -287,6 +292,10 @@ export const deletePost = asyncHandler(
 
 		await Post.findByIdAndDelete(postId);
 
+		res.status(200).json({
+			success: true,
+			message: 'post deleted successfully',
+		});
 		res.status(200).json({
 			success: true,
 			message: 'post deleted successfully',

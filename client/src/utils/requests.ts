@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { deleteAuthLocalStorage } from './functions';
 
 const api = axios.create({
 	baseURL: import.meta.env.VITE_API_URL,
@@ -127,14 +126,13 @@ export const getAccessToken = async (): Promise<string | null> => {
 
 export const authGet = async (
 	url: string,
-	onFail: (message: string) => void,
+	onFail: (message: string, auth?: boolean) => void,
 	onSuccess: (data: any) => void,
 	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		deleteAuthLocalStorage();
-		onFail('Please login to continue');
+		onFail('Please login to continue', true);
 		return;
 	}
 	try {
@@ -157,14 +155,13 @@ export const authGet = async (
 export const authPost = async (
 	url: string,
 	data: any,
-	onFail: (message: string) => void,
+	onFail: (message: string, auth?: boolean) => void,
 	onSuccess: (data: any) => void,
 	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		deleteAuthLocalStorage();
-		onFail('Please login to continue');
+		onFail('Please login to continue', true);
 		return;
 	}
 	try {
@@ -187,14 +184,13 @@ export const authPost = async (
 export const authPut = async (
 	url: string,
 	data: any,
-	onFail: (message: string) => void,
+	onFail: (message: string, auth?: boolean) => void,
 	onSuccess: (data: any) => void,
 	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		deleteAuthLocalStorage();
-		onFail('Please login to continue');
+		onFail('Please login to continue', true);
 		return;
 	}
 	try {
@@ -216,14 +212,13 @@ export const authPut = async (
 
 export const authDel = async (
 	url: string,
-	onFail: (message: string) => void,
+	onFail: (message: string, auth?: boolean) => void,
 	onSuccess: (data: any) => void,
 	headers?: any
 ) => {
 	const accessToken: string | null = await getAccessToken();
 	if (!accessToken) {
-		deleteAuthLocalStorage();
-		onFail('Please login to continue');
+		onFail('Please login to continue', true);
 		return;
 	}
 	try {

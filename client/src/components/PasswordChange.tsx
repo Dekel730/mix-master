@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { FieldValues, useForm } from 'react-hook-form';
 import Spinner from './Spinner';
 import CreatePassword from './CreatePassword';
+import { useAuth } from '../context/AuthContext';
 
 const PasswordChange = () => {
 	const schema = z.object({
@@ -24,6 +25,8 @@ const PasswordChange = () => {
 			),
 	});
 
+	const { logout } = useAuth();
+
 	const {
 		register,
 		handleSubmit,
@@ -39,8 +42,11 @@ const PasswordChange = () => {
 		await authPut(
 			'/user/password',
 			data,
-			() => {
-				toast.error('Failed to change password');
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
 				toast.success('Password changed successfully');

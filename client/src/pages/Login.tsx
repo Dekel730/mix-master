@@ -11,12 +11,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '../components/inputs/Input';
 import PasswordInput from '../components/inputs/PasswordInput';
 import { getDeviceDetails } from '../utils/functions';
+import { useAuth } from '../context/AuthContext';
 
-interface IProps {
-	setIsAuthenticated: (isAuthenticated: boolean) => void;
-}
-const Login = ({ setIsAuthenticated }: IProps) => {
+const Login = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const { login } = useAuth();
 
 	const device = getDeviceDetails();
 
@@ -41,7 +40,7 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 			new Date(Date.now() + expiresIn).toISOString()
 		);
 		toast.success('Logged in successfully');
-		setIsAuthenticated(true);
+		login(data.user);
 	};
 
 	const handleLogin = async (data: FieldValues) => {
