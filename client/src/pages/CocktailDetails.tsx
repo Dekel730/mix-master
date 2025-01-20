@@ -372,9 +372,7 @@ const CocktailDisplay: React.FC = () => {
 						{cocktail.title}
 					</h1>
 					<p className="mt-2 text-gray-400">{cocktail.description}</p>
-					{cocktail.ai && (
-						<ShiningText text="Generated with AI" />
-					)}
+					{cocktail.ai && <ShiningText text="Generated with AI" />}
 
 					<div className="mt-6 flex items-center">
 						<LikeButton

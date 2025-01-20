@@ -9,3 +9,12 @@ export interface IDrink {
 	}[];
 	description: string;
 }
+
+export const defaultDrink: IDrink = {
+	_id: '',
+	title: '',
+	image: '',
+	instructions: [],
+	ingredients: [],
+	description: '',
+};

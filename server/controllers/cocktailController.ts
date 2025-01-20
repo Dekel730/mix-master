@@ -7,7 +7,7 @@ const transformCocktail = (cocktail: any) => {
 		if (cocktail[`strIngredient${i}`]) {
 			ingredients.push({
 				name: cocktail[`strIngredient${i}`],
-				amount: cocktail[`strMeasure${i}`],
+				amount: cocktail[`strMeasure${i}`] || '',
 			});
 		}
 	}
