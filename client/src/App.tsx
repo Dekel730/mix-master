@@ -59,7 +59,12 @@ function App() {
 				clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
 			>
 				<Router>
-					{isAuthenticated && <Header setIsAuthenticated={setIsAuthenticated} setIsLoading={setIsLoading} />}
+					{isAuthenticated && (
+						<Header
+							setIsAuthenticated={setIsAuthenticated}
+							setIsLoading={setIsLoading}
+						/>
+					)}
 					<Routes>
 						<Route
 							path="/"

@@ -197,10 +197,6 @@ export const createWithAI = asyncHandler(
 
 		const resultJSON: IPost = JSON.parse(result.response.text());
 
-		console.log(resultJSON);
-		console.log(resultJSON.ingredients);
-		console.log(resultJSON.instructions);
-
 		// check if the result is valid
 
 		if (
@@ -237,8 +233,9 @@ export const createWithAI = asyncHandler(
 			success: true,
 			post: resultJSON,
 		});
-	}
-);
+	});
+
+
 
 // Get User Posts
 export const getUserPosts = asyncHandler(
@@ -261,6 +258,7 @@ export const getUserPosts = asyncHandler(
 		const pages = Math.ceil(count / POSTS_PAGE_SIZE);
 
 		const posts = postsWithCounts(userPosts);
+
 
 		res.status(200).json({
 			success: true,
