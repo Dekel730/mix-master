@@ -4,11 +4,13 @@ import Input from './inputs/Input';
 import RedTitle from './RedTitle';
 import { FaSearch } from 'react-icons/fa';
 import DrinkDisplay from './DrinkDisplay';
+import Spinner from './Spinner';
 
 interface ExploreProps {
 	drinks: IDrink[];
 	refresh: () => Promise<void>;
 	query?: string;
+	gettingData: boolean;
 	register: UseFormRegister<{ searchQuery: string; searchDrinks: string }>;
 	errors: FieldErrors<{ searchQuery: string; searchDrinks: string }>;
 	setValue: UseFormSetValue<{ searchQuery: string; searchDrinks: string }>;
@@ -19,6 +21,7 @@ const Explore = ({
 	register,
 	errors,
 	setValue,
+	gettingData,
 }: ExploreProps) => {
 	return (
 		<div className="flex flex-col space-y-4">
@@ -43,7 +46,13 @@ const Explore = ({
 			</div>
 			<RedTitle title="Our Featured Cocktails" />
 			{drinks.length === 0 ? (
-				<p className="text-white">No cocktails found</p>
+				gettingData ? (
+					<div className='w-full flex justify-center'>
+						<Spinner width="w-32" height="h-32" />
+					</div>
+				) : (
+					<p className="text-white">No cocktails found</p>
+				)
 			) : (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{drinks.map((drink) => (

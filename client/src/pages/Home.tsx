@@ -70,7 +70,7 @@ const Home = () => {
 	const getSearchedDrinks = async () => {
 		setGettingData(true);
 		await authGet(
-			`/cocktail/search/${searchDrinks}`,
+			`/cocktail/search/?name=${searchDrinks}`,
 			(message: string, auth?: boolean) => {
 				toast.error(message);
 				if (auth) {
@@ -181,7 +181,7 @@ const Home = () => {
 	useEffect(() => {
 		if (activeTab === 'explore') {
 			if (!searchDrinks) {
-				setDrinks([]);
+				getRandomDrinks();
 			} else {
 				getSearchedDrinks();
 			}
@@ -189,11 +189,10 @@ const Home = () => {
 	}, [searchDrinks]);
 
 	useEffect(() => {
-		if (activeTab !== 'search') {
-			setValue('searchQuery', '');
-		}
 		if (activeTab === 'explore') {
-			getRandomDrinks();
+			if (drinks.length === 0) {
+				getRandomDrinks();
+			}
 		}
 		if (activeTab !== 'feed') {
 			hasChanged.current = true;
@@ -204,12 +203,21 @@ const Home = () => {
 				getFeedPosts(1, true);
 			}
 			if (hasChanged.current) {
-				setCocktailsData(defaultCocktailsData);
-				getFeedPosts(1, false);
+				if (searchQuery) {
+					setCocktailsData(defaultCocktailsData);
+					getFeedPosts(1, false);
+				} else {
+					if (CocktailsData.cocktails.length === 0) {
+						getFeedPosts(1, false);
+					}
+				}
 			}
 		}
 		if (activeTab === 'search') {
 			setCocktailsData(defaultCocktailsData);
+		}
+		if (activeTab !== 'search') {
+			setValue('searchQuery', '');
 		}
 	}, [activeTab]);
 
@@ -273,6 +281,7 @@ const Home = () => {
 					<div className="flex-1 bg-[#2a2a2a] p-4 rounded-lg h-fit scrollbar-hide">
 						<TabContent
 							drinks={drinks}
+							gettingData={gettingData}
 							refresh={getRandomDrinks}
 							setCocktails={setCocktailsData}
 							cocktails={CocktailsData.cocktails}
