@@ -2,14 +2,11 @@ import { useEffect, useState } from 'react';
 import CocktailDisplay from './CocktailDisplay';
 import { motion } from 'framer-motion';
 import Spinner from './Spinner';
-import {
-	CocktailsData,
-	defaultCocktailsData,
-	ICocktail,
-} from '../types/cocktail';
-import { toast } from 'react-toastify';
-import { authDel } from '../utils/requests';
+import { CocktailsData, defaultCocktailsData, ICocktail } from '../types/cocktail';
 import Modal from './Modal';
+import { authDel } from '../utils/requests';
+import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 interface CocktailListProps {
 	cocktails: ICocktail[];
@@ -29,6 +26,7 @@ const CocktailList = ({
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [isDeleting, setIsDeleting] = useState<string>('');
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<string>('');
+	const { logout } = useAuth();
 
 	const getCocktails = async (page: number) => {
 		setIsLoading(true);
@@ -42,8 +40,11 @@ const CocktailList = ({
 	const handleDeletePost = async (postId: string) => {
 		await authDel(
 			`/post/${postId}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
 				setCocktails((prev: CocktailsData) => ({

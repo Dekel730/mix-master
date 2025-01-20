@@ -1,10 +1,11 @@
 import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 interface ProtectedRouteProps {
-	isAuthenticated: boolean;
 	children: React.ReactNode;
 }
-const ProtectedRoute = ({ isAuthenticated, children }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+	const { isAuthenticated } = useAuth();
 	const path = window.location.pathname.slice(1);
 
 	if (!isAuthenticated) {

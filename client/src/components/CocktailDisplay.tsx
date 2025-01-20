@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { ICocktail } from '../types/cocktail';
 import ItemUser from './ItemUser';
 import Spinner from './Spinner';
+import { useAuth } from '../context/AuthContext';
 
 interface CocktailDisplayProps {
 	cocktail: ICocktail;
@@ -22,6 +23,7 @@ const CocktailDisplay = ({
 	handleDeleteUser,
 	loader,
 }: CocktailDisplayProps) => {
+	const { logout } = useAuth();
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
 
 	const navigate = useNavigate();
@@ -50,7 +52,12 @@ const CocktailDisplay = ({
 		await authPost(
 			`/post/${postId}/like`,
 			{},
-			(message) => toast.error(message), // אם יש טעות, מציגים הודעה
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			}, // אם יש טעות, מציגים הודעה
 			() => {
 				likeUnlike({
 					...cocktail,

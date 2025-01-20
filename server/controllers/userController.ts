@@ -42,9 +42,10 @@ const createUserLogin = async (
 		expiresIn: '1h',
 	});
 	const refreshToken = jwt.sign(
-		{ id: user.id },
+		{ id: user.id, device: device.id },
 		process.env.JWT_SECRET_REFRESH!
 	);
+	const hashedToken = await bcrypt.hash(refreshToken, 10);
 	const token = user.tokens.find((t) => t.device_id === device.id);
 	if (token) {
 		const index = user.tokens.findIndex((t) => t.device_id === device.id);
@@ -53,11 +54,11 @@ const createUserLogin = async (
 			type: token.type,
 			name: token.name,
 			createdAt: token.createdAt,
-			token: refreshToken,
+			token: hashedToken,
 		};
 	} else {
 		user.tokens.push({
-			token: refreshToken,
+			token: hashedToken,
 			device_id: device.id,
 			createdAt: new Date(),
 			name: device.name,
@@ -439,13 +440,19 @@ const refresh = asyncHandler(async (req, res) => {
 		res.status(404);
 		throw new Error('User not found');
 	}
-	if (!user.tokens.find((t) => t.token === refreshToken)) {
+	const device = user.tokens.find((t) => t.device_id === decoded.device);
+	if (!device) {
 		user.tokens = [];
 		await user.save();
 		res.status(401);
 		throw new Error('Invalid refresh token');
 	}
-	const device = user.tokens.find((t) => t.token === refreshToken)!;
+	if (!bcrypt.compareSync(refreshToken, device.token)) {
+		user.tokens = [];
+		await user.save();
+		res.status(401);
+		throw new Error('Invalid refresh token');
+	}
 	const accessToken: string = jwt.sign(
 		{ id: decoded.id },
 		process.env.JWT_SECRET!,
@@ -457,14 +464,16 @@ const refresh = asyncHandler(async (req, res) => {
 		process.env.JWT_SECRET_REFRESH!
 	);
 
-	const index = user.tokens.findIndex((t) => t.token === refreshToken);
+	const newHashedToken = await bcrypt.hash(newRefreshToken, 10);
+
+	const index = user.tokens.findIndex((t) => t.device_id === decoded.device);
 
 	user.tokens[index] = {
 		device_id: device.device_id,
 		type: device.type,
 		name: device.name,
 		createdAt: device.createdAt,
-		token: newRefreshToken,
+		token: newHashedToken,
 	};
 	await user.save();
 
@@ -498,13 +507,20 @@ const logout = asyncHandler(
 			res.status(404);
 			throw new Error('User not found');
 		}
-		if (!user.tokens.find((t) => t.token === refreshToken)) {
+		const device = user.tokens.find((t) => t.device_id === decoded.device);
+		if (!device) {
 			user.tokens = [];
 			await user.save();
 			res.status(401);
 			throw new Error('Invalid token');
 		}
-		user.tokens = user.tokens.filter((t) => t.token !== refreshToken);
+		if (!bcrypt.compareSync(refreshToken, device.token)) {
+			user.tokens = [];
+			await user.save();
+			res.status(401);
+			throw new Error('Invalid refresh token');
+		}
+		user.tokens = user.tokens.filter((t) => t.device_id !== decoded.device);
 		await user.save();
 		res.json({
 			success: true,
@@ -534,7 +550,7 @@ const resendEmail = asyncHandler(
 		const sent = await sendEmail(
 			user.email,
 			'Verify your email',
-			`please verify your email: http://localhost:3000/verify/${user.id}`
+			`please verify your email: ${process.env.HOST_ADDRESS}/verify/${user.id}`
 		);
 		res.json({
 			success: true,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FieldValues, useForm } from 'react-hook-form';
 import ImagePreview from '../components/ImagePreview';
 import { MAX_DESCRIPTION_LENGTH } from '../utils/consts';
@@ -6,11 +6,12 @@ import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
-import { authPost } from '../utils/requests';
-import { useNavigate } from 'react-router-dom';
+import { authGet, authPost } from '../utils/requests';
+import { useNavigate, useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import CocktailForm from '../components/CocktailForm';
 import AICocktailForm from '../components/AICocktailForm';
+import { useAuth } from '../context/AuthContext';
 
 interface UploadedImage {
 	id: string;
@@ -25,6 +26,8 @@ export default function CreateCocktail() {
 	const [previewImage, setPreviewImage] = useState<string | null>(null);
 	const [activeOption, setActiveOption] = useState<'manual' | 'ai'>('manual');
 	const [ai, setAi] = useState<boolean>(false);
+	const { logout } = useAuth();
+	const { id } = useParams();
 
 	const navigate = useNavigate();
 
@@ -118,8 +121,6 @@ export default function CreateCocktail() {
 		},
 	});
 
-	console.log(errors);
-
 	const onAISubmit = async (data: FieldValues) => {
 		setIsAiLoading(true);
 		await authPost(
@@ -130,25 +131,40 @@ export default function CreateCocktail() {
 					(ingredient: { name: string }) => ingredient.name
 				),
 			},
-			(message) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data: any) => {
 				setActiveOption('manual');
-				setValue('title', data.post.title);
-				setValue('description', data.post.description);
-				setValue('ingredients', data.post.ingredients);
-				setValue(
-					'instructions',
-					data.post.instructions.map((instruction: any) => ({
-						name: instruction,
-					}))
-				);
+				setData(data.post);
 				setAi(true);
 				toast.success('AI generated cocktail');
 			}
 		);
 		setIsAiLoading(false);
+	};
+
+	const setData = (data: {
+		title: string;
+		description: string;
+		ingredients: {
+			name: string;
+			amount: string;
+		}[];
+		instructions: string[];
+	}) => {
+		setValue('title', data.title);
+		setValue('description', data.description);
+		setValue('ingredients', data.ingredients);
+		setValue(
+			'instructions',
+			data.instructions.map((instruction: string) => ({
+				name: instruction,
+			}))
+		);
 	};
 
 	const onSubmit = async (data: FieldValues) => {
@@ -172,8 +188,11 @@ export default function CreateCocktail() {
 		await authPost(
 			'/post',
 			formData,
-			(message) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data) => {
 				toast.success('Cocktail created successfully');
@@ -198,6 +217,29 @@ export default function CreateCocktail() {
 			value: 'ai',
 		},
 	];
+
+	const getCocktailData = async () => {
+		setIsLoading(true);
+		await authGet(
+			`/cocktail/${id}`,
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data) => {
+				setData(data.cocktail);
+			}
+		);
+		setIsLoading(false);
+	};
+
+	useEffect(() => {
+		if (id !== 'new') {
+			getCocktailData();
+		}
+	}, []);
 
 	if (isLoading) {
 		return <Loader />;

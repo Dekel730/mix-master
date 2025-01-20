@@ -12,14 +12,15 @@ import FileInput from './inputs/FileInput';
 import TextArea from './inputs/TextArea';
 import { GENDER_OPTIONS, MAX_BIO_LENGTH } from '../utils/consts';
 import Modal from './Modal';
-import { deleteAuthLocalStorage } from '../utils/functions';
 import Select from './inputs/Select';
+import { useAuth } from '../context/AuthContext';
 
 interface PersonalDetailsProps {
 	user: IUserSettings;
 	setUser: (user: IUserSettings) => void;
 }
 const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
+	const { logout } = useAuth();
 	const schema = z.object({
 		f_name: z.string().nonempty("First name can't be empty"),
 		l_name: z.string().nonempty("Last name can't be empty"),
@@ -45,11 +46,14 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 		setIsLoading(true);
 		await authDel(
 			'/user',
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
-				deleteAuthLocalStorage();
+				logout();
 				toast.info('Account deleted successfully');
 				setIsDeleteModalOpen(false);
 			}
@@ -72,8 +76,11 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 		await authPut(
 			'/user',
 			formData,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data: any) => {
 				localStorage.setItem('user', JSON.stringify(data.user));

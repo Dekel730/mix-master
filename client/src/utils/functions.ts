@@ -69,14 +69,6 @@ export const getDeviceDetails = (): {
 	return { name, type, id };
 };
 
-export const deleteAuthLocalStorage = (): void => {
-	localStorage.removeItem('accessToken');
-	localStorage.removeItem('refreshToken');
-	localStorage.removeItem('expiresAt');
-	localStorage.removeItem('user');
-	localStorage.setItem('isAuthenticated', 'false');
-};
-
 export const formatDate = (date: Date): string => {
 	const pad = (n: number) => n.toString().padStart(2, '0');
 
@@ -88,7 +80,6 @@ export const formatDate = (date: Date): string => {
 
 	return `${day}/${month}/${year} ${hours}:${minutes}`;
 };
-
 
 export const getError = (
 	field: string,

@@ -15,13 +15,11 @@ import FileInput from '../components/inputs/FileInput';
 import { getDeviceDetails } from '../utils/functions';
 import { GENDER_OPTIONS } from '../utils/consts';
 import Select from '../components/inputs/Select';
+import { useAuth } from '../context/AuthContext';
 
-interface IProps {
-	setIsAuthenticated: (isAuthenticated: boolean) => void;
-}
-
-const Register = ({ setIsAuthenticated }: IProps) => {
+const Register = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const { login } = useAuth();
 
 	const navigate = useNavigate();
 
@@ -65,7 +63,7 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 			'expiresAt',
 			new Date(Date.now() + expiresIn).toISOString()
 		);
-		setIsAuthenticated(true);
+		login(data.user);
 	};
 
 	const handleRegister = async (data: FieldValues) => {
