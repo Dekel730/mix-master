@@ -236,7 +236,7 @@ export default function CreateCocktail() {
 	};
 
 	useEffect(() => {
-		if (id !== 'new') {
+		if (id !== 'build') {
 			getCocktailData();
 		}
 	}, []);

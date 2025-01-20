@@ -10,6 +10,8 @@ import Explore from '../components/Explore';
 import Search from '../components/Search';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { IDrink } from '../types/drink';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
 	const tabs = [
@@ -42,22 +44,61 @@ const Home = () => {
 		formState: { errors },
 	} = useForm<{
 		searchQuery: string;
+		searchDrinks: string;
 	}>();
 	const hasRun = useRef(false);
 	const hasChanged = useRef(false);
 
+	const { logout } = useAuth();
+
 	const searchQuery = watch('searchQuery');
+	const searchDrinks = watch('searchDrinks');
 
 	const TabContent =
 		tabs.find((tab) => tab.id === activeTab)?.component || Feed;
 
 	const [CocktailsData, setCocktailsData] =
 		useState<CocktailsData>(defaultCocktailsData);
+	const [drinks, setDrinks] = useState<IDrink[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const navigate = useNavigate();
 
 	const handleClick = () => {
-		navigate('/cocktail/new'); 
+		navigate('/cocktail/new/build');
+	};
+
+	const getSearchedDrinks = async () => {
+		setGettingData(true);
+		await authGet(
+			`/cocktail/search/${searchDrinks}`,
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data: { cocktails: IDrink[] }) => {
+				setDrinks(data.cocktails);
+			}
+		);
+		setGettingData(false);
+	};
+
+	const getRandomDrinks = async () => {
+		setGettingData(true);
+		await authGet(
+			'/cocktail/random',
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data: { cocktails: IDrink[] }) => {
+				setDrinks(data.cocktails);
+			}
+		);
+		setGettingData(false);
 	};
 
 	const getSearchResults = async (page?: number, loading?: boolean) => {
@@ -70,8 +111,11 @@ const Home = () => {
 
 		await authGet(
 			`/post/search/?page=${page}&query=${searchQuery}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data: CocktailsData) => {
 				if (page === 1) {
@@ -111,8 +155,11 @@ const Home = () => {
 
 		await authGet(
 			`/post/?page=${page}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data: CocktailsData) => {
 				setCocktailsData((prev: CocktailsData) => ({
@@ -132,8 +179,21 @@ const Home = () => {
 	};
 
 	useEffect(() => {
+		if (activeTab === 'explore') {
+			if (!searchDrinks) {
+				setDrinks([]);
+			} else {
+				getSearchedDrinks();
+			}
+		}
+	}, [searchDrinks]);
+
+	useEffect(() => {
 		if (activeTab !== 'search') {
 			setValue('searchQuery', '');
+		}
+		if (activeTab === 'explore') {
+			getRandomDrinks();
 		}
 		if (activeTab !== 'feed') {
 			hasChanged.current = true;
@@ -212,6 +272,8 @@ const Home = () => {
 					{/* Content container */}
 					<div className="flex-1 bg-[#2a2a2a] p-4 rounded-lg h-fit scrollbar-hide">
 						<TabContent
+							drinks={drinks}
+							refresh={getRandomDrinks}
 							setCocktails={setCocktailsData}
 							cocktails={CocktailsData.cocktails}
 							fetchMore={

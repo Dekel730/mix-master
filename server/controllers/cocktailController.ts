@@ -100,4 +100,9 @@ const getCocktailById = asyncHandler(async (req, res) => {
 	}
 });
 
-export { getRandomCocktails, searchIngredients, searchCocktails, getCocktailById };
+export {
+	getRandomCocktails,
+	searchIngredients,
+	searchCocktails,
+	getCocktailById,
+};
