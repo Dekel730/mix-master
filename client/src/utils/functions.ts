@@ -5,6 +5,7 @@ import {
 	isAndroid,
 	isTablet,
 } from 'react-device-detect';
+import { FieldErrors, FieldValues } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 
 export const isValidURL = (string: string): boolean => {
@@ -86,4 +87,36 @@ export const formatDate = (date: Date): string => {
 	const minutes = pad(date.getMinutes());
 
 	return `${day}/${month}/${year} ${hours}:${minutes}`;
+};
+
+
+export const getError = (
+	field: string,
+	errors: FieldErrors<FieldValues> | undefined
+): string | null | undefined => {
+	if (field.includes('.')) {
+		const split = field.split('.');
+		const count = split.length;
+		let error: FieldErrors<FieldValues> | undefined = errors;
+		if (!error) {
+			return null;
+		}
+		for (let i = 0; i < count; i++) {
+			let key;
+			if (!isNaN(parseInt(split[i]))) {
+				key = Number(split[i]);
+			} else {
+				key = split[i];
+			}
+			error = error[key] as FieldErrors<FieldValues>;
+			if (!error) {
+				return null;
+			}
+		}
+		return error?.message?.toString();
+	}
+	if (!errors) {
+		return null;
+	}
+	return errors[field]?.message?.toString();
 };

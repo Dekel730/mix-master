@@ -4,6 +4,7 @@ import {
 	Path,
 	UseFormRegister,
 } from 'react-hook-form';
+import { getError } from '../../utils/functions';
 
 interface SelectProps<TFieldValues extends FieldValues> {
 	StartIcon?: React.ElementType;
@@ -29,27 +30,7 @@ const Select = <TFieldValues extends FieldValues>({
 	containerClassNames = '',
 	options,
 }: SelectProps<TFieldValues>) => {
-	const getError = (): string | null | undefined => {
-		if (field.includes('.')) {
-			const split = field.split('.');
-			const count = split.length;
-			let error: FieldErrors<TFieldValues> | undefined = errors;
-			for (let i = 0; i < count; i++) {
-				let key;
-				if (!isNaN(parseInt(split[i]))) {
-					key = Number(split[i]);
-				} else {
-					key = split[i];
-				}
-				error = error[key] as FieldErrors<TFieldValues>;
-				if (!error) {
-					return null;
-				}
-			}
-			return error?.message?.toString();
-		}
-		return errors[field]?.message?.toString();
-	};
+
 	return (
 		<div className={`space-y-2 ${containerClassNames}`}>
 			<label htmlFor={field} className="text-sm text-gray-400">
@@ -59,9 +40,9 @@ const Select = <TFieldValues extends FieldValues>({
 				<select
 					id={field}
 					className={`w-full bg-[#1a1a1a] text-white h-12 rounded-xl pl-10 pr-4 outline-none appearance-none focus:ring-2 focus:${
-						getError() ? 'ring-red-500' : 'ring-gray-500'
+						getError(field, errors) ? 'ring-red-500' : 'ring-gray-500'
 					} transition-all ${
-						getError() ? 'ring-2 ring-red-500' : ''
+						getError(field, errors) ? 'ring-2 ring-red-500' : ''
 					} ${classNames}`}
                     {...register(field)}
 				>
@@ -78,7 +59,7 @@ const Select = <TFieldValues extends FieldValues>({
 					/>
 				)}
 			</div>
-			<span className="text-red-500 text-sm">{getError()}</span>
+			<span className="text-red-500 text-sm">{getError(field, errors)}</span>
 		</div>
 	);
 };

@@ -9,6 +9,7 @@ import {
 	likePost,
 	getPost,
 	createWithAI,
+	searchPosts,
 } from '../controllers/postController';
 import upload from '../config/storage';
 
@@ -21,6 +22,7 @@ router.get('/user/:userId', authUser, getUserPosts);
 router.delete('/:postId', authUser, deletePost);
 router.put('/:postId', authUser, upload.array('images', 10), updatePost);
 router.post('/:postId/like', authUser, likePost);
+router.get('/search', authUser, searchPosts);
 router.get('/:postId', authUser, getPost);
 
 export default router;
