@@ -3,9 +3,7 @@ import './Loader.css';
 import $ from 'jquery';
 
 const Loader = () => {
-	const [worker, setWorker] = useState<
-		ReturnType<typeof setInterval> | undefined
-	>(undefined);
+	const worker = useRef<NodeJS.Timeout | undefined>(undefined);
 	const [loaded, setLoaded] = useState<number>(0);
 	const hasRun = useRef<boolean>(false);
 
@@ -23,8 +21,10 @@ const Loader = () => {
 	};
 
 	function increment() {
-		console.log(loaded);
-		setLoaded((prev) => prev + 1);
+		setLoaded((prev) => {
+			const next = prev + 1;
+			return next;
+		});
 	}
 
 	function startLoading() {
@@ -32,10 +32,14 @@ const Loader = () => {
 		$('#straw').hide();
 		$('#cubes div').hide();
 		setLoaded(0);
-		setWorker(setInterval(increment, 30));
+		if (worker.current) clearInterval(worker.current);
+		worker.current = setInterval(increment, 30);
 	}
 	function stopLoading() {
-		clearInterval(worker);
+		if (worker.current) {
+			clearInterval(worker.current);
+			worker.current = undefined;
+		}
 	}
 
 	useEffect(() => {
@@ -43,11 +47,18 @@ const Loader = () => {
 	}, [loaded]);
 
 	useEffect(() => {
-		if (hasRun.current) {
+		if (!hasRun.current) {
+			hasRun.current = true;
 			return;
 		}
-		hasRun.current = true;
 		startLoading();
+
+		return () => {
+			if (worker.current) {
+				clearInterval(worker.current);
+				worker.current = undefined;
+			}
+		};
 	}, []);
 	return (
 		<div id="loader">
