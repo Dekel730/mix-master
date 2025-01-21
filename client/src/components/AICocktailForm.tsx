@@ -14,6 +14,8 @@ import { GiProgression } from 'react-icons/gi';
 import AiLoader from './AiLoader';
 import Input from './inputs/Input';
 import { BiSolidFoodMenu } from 'react-icons/bi';
+import RedButton from './RedButton';
+import { RiAiGenerate2 } from 'react-icons/ri';
 
 interface IForm {
 	language: string;
@@ -59,7 +61,7 @@ const AICocktailForm = ({
 			className="flex-grow w-full max-w-3xl bg-[#212121] rounded-3xl p-8 shadow-xl items-start"
 		>
 			<h2 className="text-white text-3xl font-bold text-center mb-8">
-				Create a Cocktail
+				Generate a Cocktail
 			</h2>
 
 			<div className="mb-6">
@@ -139,13 +141,13 @@ const AICocktailForm = ({
 					<FaPlus className="mr-2" /> Add Ingredient
 				</button>
 			</div>
-
-			<button
+			<RedButton
+				iconClassName="w-6 h-6"
 				type="submit"
-				className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors"
-			>
-				Generate Cocktail
-			</button>
+				Icon={RiAiGenerate2}
+				text="Generate Cocktail"
+				className="h-12 w-full"
+			/>
 		</form>
 	);
 };

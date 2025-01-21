@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { IDrink } from '../types/drink';
 import { useAuth } from '../context/AuthContext';
+import { FaPlus } from 'react-icons/fa';
+import RedButton from '../components/RedButton';
 
 const Home = () => {
 	const tabs = [
@@ -251,12 +253,13 @@ const Home = () => {
 							))}
 						</div>
 						{/* Add Cocktail button */}
-						<button
-							className="mt-3 md:mt-16 mb-1 md:mb-4 p-3 mx-4 w-auto bg-[#D93025] rounded-lg text-white flex-col hover:bg-[#D93025]/90 flex items-center"
-							onClick={handleClick}
-						>
-							Add New Cocktail
-						</button>
+						<RedButton
+							handleClick={handleClick}
+							text="Add New Cocktail"
+							Icon={FaPlus}
+							className="mt-3 md:mt-16 mb-1 md:mb-4 p-3 mx-4 w-auto"
+							iconClassName='w-4 h-4'
+						/>
 
 						{/* Tabs for mobile */}
 						<div className="flex md:hidden scrollbar-hide overflow-x-auto space-x-2 p-4">

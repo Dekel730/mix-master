@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import CocktailDisplay from './CocktailDisplay';
 import { motion } from 'framer-motion';
 import Spinner from './Spinner';
-import { CocktailsData, defaultCocktailsData, ICocktail } from '../types/cocktail';
+import {
+	CocktailsData,
+	defaultCocktailsData,
+	ICocktail,
+} from '../types/cocktail';
 import Modal from './Modal';
 import { authDel } from '../utils/requests';
 import { toast } from 'react-toastify';
@@ -74,7 +78,6 @@ const CocktailList = ({
 	}, [page]);
 
 	useEffect(() => {
-		console.log(query);
 		if (query === undefined) return;
 		setPage(1);
 		if (query === '') {
@@ -134,7 +137,11 @@ const CocktailList = ({
 						</div>
 					))}
 				</div>
-				{isLoading && <Spinner />}
+				{isLoading && (
+					<div className="flex justify-center w-full">
+						<Spinner width="w-24" height="h-24" />
+					</div>
+				)}
 			</motion.div>
 			<Modal
 				isOpen={isDeleteModalOpen !== ''}

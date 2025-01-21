@@ -5,6 +5,8 @@ import RedTitle from './RedTitle';
 import { FaSearch } from 'react-icons/fa';
 import DrinkDisplay from './DrinkDisplay';
 import Spinner from './Spinner';
+import RedButton from './RedButton';
+import { RiRefreshFill } from 'react-icons/ri';
 
 interface ExploreProps {
 	drinks: IDrink[];
@@ -37,17 +39,18 @@ const Explore = ({
 					setValue={setValue}
 					debounce={true}
 				/>
-				<button
-					onClick={refresh}
-					className="bg-[#D93025] hover:bg-[#C12717] text-white h-11 rounded-xl font-medium transition-colors hover:border-gray-500"
-				>
-					Refresh cocktails
-				</button>
+				<RedButton
+					handleClick={refresh}
+					className="h-11"
+					text="Refresh"
+					Icon={RiRefreshFill}
+					iconClassName='h-4 w-4'
+				/>
 			</div>
 			<RedTitle title="Our Featured Cocktails" />
 			{drinks.length === 0 ? (
 				gettingData ? (
-					<div className='w-full flex justify-center'>
+					<div className="w-full flex justify-center">
 						<Spinner width="w-32" height="h-32" />
 					</div>
 				) : (

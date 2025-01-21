@@ -8,6 +8,8 @@ import { formatDate } from '../utils/functions';
 import ThanosSnap from './ThanosSnap';
 import Spinner from './Spinner';
 import { useAuth } from '../context/AuthContext';
+import RedButton from './RedButton';
+import { AiOutlineDisconnect } from 'react-icons/ai';
 
 interface ConnectedDevicesProps {
 	devices: Device[];
@@ -91,12 +93,12 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 		<div>
 			<div className="flex justify-between items-center mb-4">
 				<h2 className="text-xl font-semibold">Connected Devices</h2>
-				<button
-					onClick={disconnectAllDevices}
-					className="bg-[#D93025] text-white px-4 py-2 rounded hover:bg-[#B8271F] transition-colors"
-				>
-					Disconnect All
-				</button>
+				<RedButton
+					handleClick={disconnectAllDevices}
+					text="Disconnect All"
+					Icon={AiOutlineDisconnect}
+					iconClassName="w-5 h-5"
+				/>
 			</div>
 			{devices.length > 0 ? (
 				<ul className="space-y-4">

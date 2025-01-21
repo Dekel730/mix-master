@@ -8,6 +8,7 @@ import Loader from '../components/Loader';
 import { FaGlassMartiniAlt, FaListUl } from 'react-icons/fa';
 import RedTitle from '../components/RedTitle';
 import { TbGrillFork } from 'react-icons/tb';
+import RedButton from '../components/RedButton';
 
 const DrinkDetails = () => {
 	const { id } = useParams();
@@ -93,13 +94,13 @@ const DrinkDetails = () => {
 						</ol>
 					</div>
 				</div>
-				<button
-					onClick={ForkDrink}
-					className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 font-medium text-lg transition-colors flex items-center justify-center gap-3"
-				>
-					<TbGrillFork />
-					Fork
-				</button>
+				<RedButton
+					handleClick={ForkDrink}
+					text="Fork"
+					Icon={TbGrillFork}
+					className="h-12 w-full"
+					iconClassName='w-4 h-4'
+				/>
 			</div>
 		</div>
 	);
