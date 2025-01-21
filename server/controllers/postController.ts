@@ -2,7 +2,11 @@ import asyncHandler from 'express-async-handler';
 import { Request, Response, NextFunction } from 'express';
 import Post, { Ingredient, IPost, PostDocument } from '../models/postModel';
 import User from '../models/userModel';
-import { POSTS_PAGE_SIZE } from '../utils/consts';
+import {
+	DIFFICULTY_OPTIONS,
+	LANGUAGE_OPTIONS,
+	POSTS_PAGE_SIZE,
+} from '../utils/consts';
 import { deleteFileFromPath } from '../utils/functions';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
@@ -155,9 +159,15 @@ export const createWithAI = asyncHandler(
 			res.status(400);
 			throw new Error('Please fill all required fields');
 		}
-		if (!language || !difficulty) {
+
+		if (DIFFICULTY_OPTIONS.indexOf(difficulty) === -1) {
 			res.status(400);
-			throw new Error('Please fill all required fields');
+			throw new Error('Invalid difficulty');
+		}
+
+		if (LANGUAGE_OPTIONS.indexOf(language) === -1) {
+			res.status(400);
+			throw new Error('Invalid language');
 		}
 
 		if (!ingredients) {
@@ -441,7 +451,12 @@ export const searchPosts = asyncHandler(
 		const pageNumber = page ? Number(page) : 1;
 
 		const count: number = await Post.find({
-			$text: { $search: queryS, $caseSensitive: false },
+			$or: [
+				{ title: { $regex: queryS, $options: 'i' } },
+				{ description: { $regex: queryS, $options: 'i' } },
+				{ 'ingredients.name': { $regex: queryS, $options: 'i' } },
+				{ instructions: { $regex: queryS, $options: 'i' } },
+			],
 		}).countDocuments();
 
 		if (queryS.trim().length === 0) {
@@ -450,7 +465,12 @@ export const searchPosts = asyncHandler(
 		}
 
 		const searchResult = await Post.find({
-			$text: { $search: queryS, $caseSensitive: false }, // חיפוש לפי אינדקס טקסט
+			$or: [
+				{ title: { $regex: queryS, $options: 'i' } },
+				{ description: { $regex: queryS, $options: 'i' } },
+				{ 'ingredients.name': { $regex: queryS, $options: 'i' } },
+				{ instructions: { $regex: queryS, $options: 'i' } },
+			],
 		})
 			.limit(POSTS_PAGE_SIZE)
 			.skip(POSTS_PAGE_SIZE * (pageNumber - 1))

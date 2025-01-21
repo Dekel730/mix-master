@@ -59,11 +59,10 @@ const DrinkDetails = () => {
 						alt={drink.title}
 						className="w-full h-96 object-contain rounded-2xl mb-4"
 					/>
-					<RedTitle title="Cocktail" />
+					<RedTitle title={drink.description} />
 					<h1 className="mt-2 text-3xl leading-8 font-bold">
 						{drink.title}
 					</h1>
-					<p className="mt-2 text-gray-400">{drink.description}</p>
 
 					<div className="mt-8">
 						<h2 className="text-2xl font-bold mb-4 flex items-center">
@@ -99,7 +98,7 @@ const DrinkDetails = () => {
 					text="Fork"
 					Icon={TbGrillFork}
 					className="h-12 w-full"
-					iconClassName='w-4 h-4'
+					iconClassName="w-4 h-4"
 				/>
 			</div>
 		</div>

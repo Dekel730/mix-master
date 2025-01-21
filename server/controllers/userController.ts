@@ -18,7 +18,7 @@ import {
 import { deleteUserPosts } from './postController';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
-import { MAX_BIO_LENGTH } from '../utils/consts';
+import { GENDER_OPTIONS, MAX_BIO_LENGTH } from '../utils/consts';
 import { ObjectId } from 'mongoose';
 
 const getUserData = (user: UserDocument): UserData => ({
@@ -123,7 +123,19 @@ const login = asyncHandler(
 
 const register = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
-		const { f_name, l_name, email, password, gender } = req.body;
+		const {
+			f_name,
+			l_name,
+			email,
+			password,
+			gender,
+		}: {
+			f_name: string;
+			l_name: string;
+			email: string;
+			password: string;
+			gender: string;
+		} = req.body;
 		if (!f_name || !l_name || !email || !password) {
 			res.status(400);
 			throw new Error('All fields are required');
@@ -137,6 +149,10 @@ const register = asyncHandler(
 			throw new Error(
 				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
 			);
+		}
+		if (GENDER_OPTIONS.indexOf(gender) === -1) {
+			res.status(400);
+			throw new Error('Invalid Gender');
 		}
 		const userFound = await User.findOne({
 			email: { $regex: new RegExp(`^${email}$`, 'i') },
@@ -386,6 +402,10 @@ const updateUser = asyncHandler(
 		if (bio && bio.length > MAX_BIO_LENGTH) {
 			res.status(400);
 			throw new Error('Bio must be less than 250 characters');
+		}
+		if (GENDER_OPTIONS.indexOf(gender) === -1) {
+			res.status(400);
+			throw new Error('Invalid Gender');
 		}
 		let picture: string | undefined | null = user.picture;
 		let deletePictureBool = deletePicture === 'true';

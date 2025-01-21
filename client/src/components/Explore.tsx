@@ -44,10 +44,10 @@ const Explore = ({
 					className="h-11"
 					text="Refresh"
 					Icon={RiRefreshFill}
-					iconClassName='h-4 w-4'
+					iconClassName="h-4 w-4"
 				/>
 			</div>
-			<RedTitle title="Our Featured Cocktails" />
+			<RedTitle title="Our Featured Drinks" />
 			{drinks.length === 0 ? (
 				gettingData ? (
 					<div className="w-full flex justify-center">

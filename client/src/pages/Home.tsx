@@ -191,11 +191,6 @@ const Home = () => {
 	}, [searchDrinks]);
 
 	useEffect(() => {
-		if (activeTab === 'explore') {
-			if (drinks.length === 0) {
-				getRandomDrinks();
-			}
-		}
 		if (activeTab !== 'feed') {
 			hasChanged.current = true;
 		}
@@ -258,7 +253,7 @@ const Home = () => {
 							text="Add New Cocktail"
 							Icon={FaPlus}
 							className="mt-3 md:mt-16 mb-1 md:mb-4 p-3 mx-4 w-auto"
-							iconClassName='w-4 h-4'
+							iconClassName="w-4 h-4"
 						/>
 
 						{/* Tabs for mobile */}
