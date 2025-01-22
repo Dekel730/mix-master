@@ -11,9 +11,9 @@ interface FeedProps {
 	fetchMore: (page: number) => Promise<boolean>;
 	pages: number;
 	query?: string;
-	register: UseFormRegister<{ searchQuery: string }>;
-	errors: FieldErrors<{ searchQuery: string }>;
-	setValue: UseFormSetValue<{ searchQuery: string }>;
+	register: UseFormRegister<{ searchQuery: string; searchDrinks: string }>;
+	errors: FieldErrors<{ searchQuery: string; searchDrinks: string }>;
+	setValue: UseFormSetValue<{ searchQuery: string; searchDrinks: string }>;
 }
 
 const Search = ({
@@ -28,8 +28,8 @@ const Search = ({
 }: FeedProps) => {
 	return (
 		<div className="md:col-span-2">
-			<RedTitle title='Search' />
-			<Input<{ searchQuery: string }>
+			<RedTitle title="Search" />
+			<Input<{ searchQuery: string; searchDrinks: string }>
 				register={register}
 				field="searchQuery"
 				placeholder="Search for a cocktail"

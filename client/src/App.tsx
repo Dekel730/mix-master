@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
 import CocktailDetails from './pages/CocktailDetails';
 import CocktailNew from './pages/CocktailNew';
+import DrinkDetails from './pages/DrinkDetails';
 import ProtectedRoute from './components/routes/ProtectedRoute';
 import UserRestrictedRoute from './components/routes/UserRestrictedRoute';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -61,6 +62,14 @@ function App() {
 								<UserRestrictedRoute>
 									<Register />
 								</UserRestrictedRoute>
+							}
+						/>
+						<Route
+							path="/drink/:id"
+							element={
+								<ProtectedRoute>
+									<DrinkDetails />
+								</ProtectedRoute>
 							}
 						/>
 						<Route

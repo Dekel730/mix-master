@@ -1,0 +1,83 @@
+[data-purple] {
+	color: #858585;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) or
+	(-webkit-background-clip: text) {
+	[data-purple] {
+		color: transparent;
+		background-image: linear-gradient(
+				to right,
+				transparent 0%,
+				transparent 45%,
+				white 50%,
+				transparent 55%,
+				transparent 100%
+			),
+			linear-gradient(
+				270deg,
+				#674af7 100.3%,
+				#3e2da6 100%,
+				#511f9b 100.6%,
+				#342076 100.6%,
+				#44249b 100.8%,
+				#482c96 100.8%,
+				#3f21a2 100.9%,
+				#6366f1
+			);
+		background-position: 110% 0%, 0 0;
+		background-size: 200% auto, auto;
+		-webkit-background-clip: text;
+		background-clip: text;
+		animation: shine 7s ease-in-out infinite;
+	}
+}
+[data-purple]:before {
+	content: attr(data-purple);
+	color: #fff;
+	position: absolute;
+	z-index: -1;
+	top: -0.08vw;
+	left: 0px;
+	text-shadow: black 0px 0.08vw 12px;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) or
+	(-webkit-background-clip: text) {
+	[data-purple]:after {
+		content: attr(data-purple);
+		position: absolute;
+		top: 0;
+		left: 0;
+		background-image: linear-gradient(
+			to bottom,
+			transparent 0%,
+			transparent 48%,
+			rgba(17, 17, 17, 0.5) 40%,
+			transparent 75%
+		);
+		-webkit-background-clip: text;
+		background-clip: text;
+	}
+}
+
+@-webkit-keyframes shine {
+	from {
+		background-position: 110% 0%, 0 0;
+	}
+	50% {
+		background-position: -50% 0%, 0 0;
+	}
+	to {
+		background-position: 110% 0%, 0 0;
+	}
+}
+@keyframes shine {
+	from {
+		background-position: 110% 0%, 0 0;
+	}
+	50% {
+		background-position: -50% 0%, 0 0;
+	}
+	to {
+		background-position: 110% 0%, 0 0;
+	}
+}

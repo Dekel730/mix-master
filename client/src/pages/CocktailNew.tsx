@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FieldValues, useForm } from 'react-hook-form';
 import ImagePreview from '../components/ImagePreview';
 import { MAX_DESCRIPTION_LENGTH } from '../utils/consts';
@@ -28,6 +28,7 @@ export default function CreateCocktail() {
 	const [ai, setAi] = useState<boolean>(false);
 	const { logout } = useAuth();
 	const { id } = useParams();
+	const runId = useRef<string>('');
 
 	const navigate = useNavigate();
 
@@ -236,8 +237,11 @@ export default function CreateCocktail() {
 	};
 
 	useEffect(() => {
-		if (id !== 'new') {
-			getCocktailData();
+		if (id && id !== 'build') {
+			if (runId.current !== id) {
+				runId.current = id;
+				getCocktailData();
+			}
 		}
 	}, []);
 
