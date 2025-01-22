@@ -700,6 +700,81 @@ const disconnectAllDevices = asyncHandler(
 	}
 );
 
+const sendEmailPasswordReset = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const { email } = req.body;
+		if (!email_regex.test(email)) {
+			res.status(400);
+			throw new Error('Invalid email');
+		}
+		const user = await User.findOne({
+			email: { $regex: new RegExp(`^${email}$`, 'i') },
+		});
+		if (!user) {
+			res.status(400);
+			throw new Error('User not found');
+		}
+		const token = uuid();
+		const salt = await bcrypt.genSalt(10);
+		const hashedToken = await bcrypt.hash(token, salt);
+		user.resetPasswordToken = hashedToken;
+		user.save();
+		sendEmail(
+			email,
+			'Reset your password - Mix Master',
+			`Reset your password: ${process.env.HOST_ADDRESS}/forgot/password/${token}/${email}`
+		);
+		res.json({
+			success: true,
+			message: 'Email sent',
+		});
+	}
+);
+
+const resetPassword = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const { token, email } = req.params;
+		const { password } = req.body;
+		if (!email_regex.test(email)) {
+			res.status(400);
+			throw new Error('Invalid email');
+		}
+		if (!token) {
+			res.status(400);
+			throw new Error('Invalid token');
+		}
+		if (!password_regex.test(password)) {
+			res.status(400);
+			throw new Error(
+				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
+			);
+		}
+		const user = await User.findOne({ email });
+		if (!user) {
+			res.status(400);
+			throw new Error('Invalid token');
+		}
+		if (!user.resetPasswordToken) {
+			res.status(400);
+			throw new Error('Invalid token');
+		}
+		const isMatch = await bcrypt.compare(token, user.resetPasswordToken);
+		if (!isMatch) {
+			res.status(400);
+			throw new Error('Invalid token');
+		}
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
+		user.password = hashedPassword;
+		user.resetPasswordToken = '';
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Password changed successfully',
+		});
+	}
+);
+
 const getUserId = async (email: string): Promise<string> => {
 	const user = await User.findOne({
 		email: { $regex: new RegExp(`^${email}$`, 'i') },
@@ -728,4 +803,6 @@ export {
 	disconnectDevice,
 	disconnectAllDevices,
 	changePassword,
+	sendEmailPasswordReset,
+	resetPassword,
 };
