@@ -16,6 +16,7 @@ import { getDeviceDetails } from '../utils/functions';
 import { GENDER_OPTIONS } from '../utils/consts';
 import Select from '../components/inputs/Select';
 import { useAuth } from '../context/AuthContext';
+import RedButton from '../components/RedButton';
 
 const Register = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -193,10 +194,11 @@ const Register = () => {
 										setSelectedFile={setSelectedFile}
 									/>
 								</div>
-
-								<button className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors">
-									Register
-								</button>
+								<RedButton
+									text="Register"
+									type="submit"
+									className="h-12 w-full"
+								/>
 
 								<div className="relative">
 									<hr className="border-t border-gray-600" />

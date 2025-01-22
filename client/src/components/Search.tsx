@@ -5,7 +5,7 @@ import CocktailList from './CocktailList';
 import { FaSearch } from 'react-icons/fa';
 import RedTitle from './RedTitle';
 
-interface FeedProps {
+interface SearchProps {
 	cocktails: ICocktail[];
 	setCocktails: React.Dispatch<React.SetStateAction<CocktailsData>>;
 	fetchMore: (page: number) => Promise<boolean>;
@@ -25,7 +25,7 @@ const Search = ({
 	errors,
 	query,
 	setValue,
-}: FeedProps) => {
+}: SearchProps) => {
 	return (
 		<div className="md:col-span-2">
 			<RedTitle title="Search" />

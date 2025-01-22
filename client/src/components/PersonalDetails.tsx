@@ -4,7 +4,6 @@ import { FieldValues, useForm } from 'react-hook-form';
 import { FaBook, FaTrash, FaUser, FaVenusMars } from 'react-icons/fa';
 import z from 'zod';
 import { IUserSettings } from '../types/user';
-import Spinner from './Spinner';
 import { authDel, authPut } from '../utils/requests';
 import { toast } from 'react-toastify';
 import Input from './inputs/Input';
@@ -14,6 +13,7 @@ import { GENDER_OPTIONS, MAX_BIO_LENGTH } from '../utils/consts';
 import Modal from './Modal';
 import Select from './inputs/Select';
 import { useAuth } from '../context/AuthContext';
+import RedButton from './RedButton';
 
 interface PersonalDetailsProps {
 	user: IUserSettings;
@@ -164,12 +164,12 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						<FaTrash className="mr-2" />
 						Delete Account
 					</button>
-					<button
+					<RedButton
+						text="Save"
+						loading={isLoading}
 						type="submit"
-						className="bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors px-6"
-					>
-						{isLoading ? <Spinner /> : 'Save'}
-					</button>
+						className="px-6 h-12"
+					/>
 				</div>
 				<Modal
 					isOpen={isDeleteModalOpen}

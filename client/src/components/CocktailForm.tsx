@@ -21,6 +21,7 @@ import { AiOutlineNumber } from 'react-icons/ai';
 import { PiStepsFill } from 'react-icons/pi';
 import { useRef } from 'react';
 import { toast } from 'react-toastify';
+import RedButton from './RedButton';
 
 interface CocktailFormProps {
 	onSubmit: (data: IForm) => void;
@@ -297,13 +298,13 @@ const CocktailForm = ({
 					/>
 				</div>
 			</div>
-
-			<button
+			<RedButton
+				text="Create Cocktail"
+				Icon={FaCocktail}
 				type="submit"
-				className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors"
-			>
-				Create Cocktail
-			</button>
+				className="h-12 w-full"
+				iconClassName='w-5 h-5'
+			/>
 		</form>
 	);
 };

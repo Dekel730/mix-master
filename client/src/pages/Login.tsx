@@ -12,6 +12,7 @@ import Input from '../components/inputs/Input';
 import PasswordInput from '../components/inputs/PasswordInput';
 import { getDeviceDetails } from '../utils/functions';
 import { useAuth } from '../context/AuthContext';
+import RedButton from '../components/RedButton';
 
 const Login = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -133,13 +134,11 @@ const Login = () => {
 										label={'Password'}
 									/>
 								</div>
-
-								<button
+								<RedButton
+									text="Log in"
 									type="submit"
-									className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors hover:border-gray-500"
-								>
-									Log in
-								</button>
+									className="w-full h-12 "
+								/>
 								<div className="relative">
 									<hr className="border-t border-gray-600" />
 									<span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#212121] px-2 text-gray-400 text-sm">
