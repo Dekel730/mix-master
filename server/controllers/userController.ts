@@ -18,7 +18,7 @@ import {
 import { deleteUserPosts } from './postController';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
-import { MAX_BIO_LENGTH } from '../utils/consts';
+import { GENDER_OPTIONS, MAX_BIO_LENGTH } from '../utils/consts';
 import { ObjectId } from 'mongoose';
 
 const getUserData = (user: UserDocument): UserData => ({
@@ -42,9 +42,10 @@ const createUserLogin = async (
 		expiresIn: '1h',
 	});
 	const refreshToken = jwt.sign(
-		{ id: user.id },
+		{ id: user.id, device: device.id },
 		process.env.JWT_SECRET_REFRESH!
 	);
+	const hashedToken = await bcrypt.hash(refreshToken, 10);
 	const token = user.tokens.find((t) => t.device_id === device.id);
 	if (token) {
 		const index = user.tokens.findIndex((t) => t.device_id === device.id);
@@ -53,11 +54,11 @@ const createUserLogin = async (
 			type: token.type,
 			name: token.name,
 			createdAt: token.createdAt,
-			token: refreshToken,
+			token: hashedToken,
 		};
 	} else {
 		user.tokens.push({
-			token: refreshToken,
+			token: hashedToken,
 			device_id: device.id,
 			createdAt: new Date(),
 			name: device.name,
@@ -122,7 +123,19 @@ const login = asyncHandler(
 
 const register = asyncHandler(
 	async (req: Request, res: Response): Promise<void> => {
-		const { f_name, l_name, email, password, gender } = req.body;
+		const {
+			f_name,
+			l_name,
+			email,
+			password,
+			gender,
+		}: {
+			f_name: string;
+			l_name: string;
+			email: string;
+			password: string;
+			gender: string;
+		} = req.body;
 		if (!f_name || !l_name || !email || !password) {
 			res.status(400);
 			throw new Error('All fields are required');
@@ -136,6 +149,10 @@ const register = asyncHandler(
 			throw new Error(
 				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
 			);
+		}
+		if (GENDER_OPTIONS.indexOf(gender) === -1) {
+			res.status(400);
+			throw new Error('Invalid Gender');
 		}
 		const userFound = await User.findOne({
 			email: { $regex: new RegExp(`^${email}$`, 'i') },
@@ -156,11 +173,26 @@ const register = asyncHandler(
 		});
 		let promises: Promise<any>[] = [];
 		promises.push(user.save());
+		const htmlContent = `
+			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+				<img src="${process.env.HOST_ADDRESS}/logo.png" alt="Mix Master Logo" style="width: 100px; display: block; margin: 0 auto 20px;" />
+				<h2 style="text-align: center; color: #333;">Verify Your Email</h2>
+				<p>Hi,</p>
+				<p>Thank you for signing up for Mix Master! Please verify your email address by clicking the button below:</p>
+				<a href="${process.env.HOST_ADDRESS}/verify/${user._id}" 
+					style="display: inline-block; background-color: #D93025; color: #fff; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+					Verify Email
+				</a>
+				<p>If you did not sign up for Mix Master, please ignore this email.</p>
+				<p>Thanks,<br>The Mix Master Team</p>
+			</div>
+		`;
 		promises.push(
 			sendEmail(
 				email,
 				'Verify your email',
-				`please verify your email: ${process.env.HOST_ADDRESS}/verify/${user.id}`
+				`please verify your email: ${process.env.HOST_ADDRESS}/verify/${user._id}`,
+				htmlContent
 			)
 		);
 		const [userSaved, sent] = await Promise.all(promises);
@@ -386,6 +418,10 @@ const updateUser = asyncHandler(
 			res.status(400);
 			throw new Error('Bio must be less than 250 characters');
 		}
+		if (GENDER_OPTIONS.indexOf(gender) === -1) {
+			res.status(400);
+			throw new Error('Invalid Gender');
+		}
 		let picture: string | undefined | null = user.picture;
 		let deletePictureBool = deletePicture === 'true';
 		if (req.file) {
@@ -439,13 +475,19 @@ const refresh = asyncHandler(async (req, res) => {
 		res.status(404);
 		throw new Error('User not found');
 	}
-	if (!user.tokens.find((t) => t.token === refreshToken)) {
+	const device = user.tokens.find((t) => t.device_id === decoded.device);
+	if (!device) {
 		user.tokens = [];
 		await user.save();
 		res.status(401);
 		throw new Error('Invalid refresh token');
 	}
-	const device = user.tokens.find((t) => t.token === refreshToken)!;
+	if (!bcrypt.compareSync(refreshToken, device.token)) {
+		user.tokens = [];
+		await user.save();
+		res.status(401);
+		throw new Error('Invalid refresh token');
+	}
 	const accessToken: string = jwt.sign(
 		{ id: decoded.id },
 		process.env.JWT_SECRET!,
@@ -457,14 +499,16 @@ const refresh = asyncHandler(async (req, res) => {
 		process.env.JWT_SECRET_REFRESH!
 	);
 
-	const index = user.tokens.findIndex((t) => t.token === refreshToken);
+	const newHashedToken = await bcrypt.hash(newRefreshToken, 10);
+
+	const index = user.tokens.findIndex((t) => t.device_id === decoded.device);
 
 	user.tokens[index] = {
 		device_id: device.device_id,
 		type: device.type,
 		name: device.name,
 		createdAt: device.createdAt,
-		token: newRefreshToken,
+		token: newHashedToken,
 	};
 	await user.save();
 
@@ -498,13 +542,20 @@ const logout = asyncHandler(
 			res.status(404);
 			throw new Error('User not found');
 		}
-		if (!user.tokens.find((t) => t.token === refreshToken)) {
+		const device = user.tokens.find((t) => t.device_id === decoded.device);
+		if (!device) {
 			user.tokens = [];
 			await user.save();
 			res.status(401);
 			throw new Error('Invalid token');
 		}
-		user.tokens = user.tokens.filter((t) => t.token !== refreshToken);
+		if (!bcrypt.compareSync(refreshToken, device.token)) {
+			user.tokens = [];
+			await user.save();
+			res.status(401);
+			throw new Error('Invalid refresh token');
+		}
+		user.tokens = user.tokens.filter((t) => t.device_id !== decoded.device);
 		await user.save();
 		res.json({
 			success: true,
@@ -531,10 +582,26 @@ const resendEmail = asyncHandler(
 			res.status(400);
 			throw new Error('Email already verified');
 		}
+		const htmlContent = `
+			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+				<img src="${process.env.HOST_ADDRESS}/logo.png" alt="Mix Master Logo" style="width: 100px; display: block; margin: 0 auto 20px;" />
+				<h2 style="text-align: center; color: #333;">Verify Your Email</h2>
+				<p>Hi,</p>
+				<p>Thank you for signing up for Mix Master! Please verify your email address by clicking the button below:</p>
+				<a href="${process.env.HOST_ADDRESS}/verify/${user._id}" 
+					style="display: inline-block; background-color: #D93025; color: #fff; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+					Verify Email
+				</a>
+				<p>If you did not sign up for Mix Master, please ignore this email.</p>
+				<p>Thanks,<br>The Mix Master Team</p>
+			</div>
+		`;
+
 		const sent = await sendEmail(
 			user.email,
 			'Verify your email',
-			`please verify your email: http://localhost:3000/verify/${user.id}`
+			`please verify your email: ${process.env.HOST_ADDRESS}/verify/${user._id}`,
+			htmlContent
 		);
 		res.json({
 			success: true,
@@ -664,6 +731,98 @@ const disconnectAllDevices = asyncHandler(
 	}
 );
 
+const sendEmailPasswordReset = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const { email } = req.body;
+		if (!email_regex.test(email)) {
+			res.status(400);
+			throw new Error('Invalid email');
+		}
+		const user = await User.findOne({
+			email: { $regex: new RegExp(`^${email}$`, 'i') },
+		});
+		if (!user) {
+			res.status(400);
+			throw new Error('User not found');
+		}
+		const token = uuid();
+		const salt = await bcrypt.genSalt(10);
+		const hashedToken = await bcrypt.hash(token, salt);
+		user.resetPasswordToken = hashedToken;
+		user.resetPasswordTokenExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+		user.save();
+		const htmlContent = `
+			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+				<img src="${process.env.HOST_ADDRESS}/cocktail.png" alt="Mix Master Logo" style="width: 100px; display: block; margin: 0 auto 20px;" />
+				<h2 style="text-align: center; color: #333;">Reset Your Password</h2>
+				<p>Hi,</p>
+				<p>We received a request to reset your password. You can reset it by clicking the link below:</p>
+				<a href="${process.env.HOST_ADDRESS}/forgot/password/${token}/${email}" 
+					style="display: inline-block; background-color: #D93025; color: #fff; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+					Reset Password
+				</a>
+				<p>If you did not request this, please ignore this email. The link will expire in 30 minutes.</p>
+				<p>Thanks,<br>Mix Master Team</p>
+			</div>
+		`;
+
+		sendEmail(
+			email,
+			'Reset your password - Mix Master',
+			`Reset your password: ${process.env.HOST_ADDRESS}/forgot/password/${token}/${email}`,
+			htmlContent
+		);
+		res.json({
+			success: true,
+			message: 'Email sent',
+		});
+	}
+);
+
+const resetPassword = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const { token, email } = req.params;
+		const { password } = req.body;
+		if (!email_regex.test(email)) {
+			res.status(400);
+			throw new Error('Invalid email');
+		}
+		if (!token) {
+			res.status(400);
+			throw new Error('Invalid token');
+		}
+		if (!password_regex.test(password)) {
+			res.status(400);
+			throw new Error(
+				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
+			);
+		}
+		const user = await User.findOne({ email });
+		if (!user) {
+			res.status(400);
+			throw new Error('Invalid token');
+		}
+		if (!user.resetPasswordToken) {
+			res.status(400);
+			throw new Error('Invalid token');
+		}
+		const isMatch = await bcrypt.compare(token, user.resetPasswordToken);
+		if (!isMatch) {
+			res.status(400);
+			throw new Error('Invalid token');
+		}
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
+		user.password = hashedPassword;
+		user.resetPasswordToken = '';
+		await user.save();
+		res.json({
+			success: true,
+			message: 'Password changed successfully',
+		});
+	}
+);
+
 const getUserId = async (email: string): Promise<string> => {
 	const user = await User.findOne({
 		email: { $regex: new RegExp(`^${email}$`, 'i') },
@@ -692,4 +851,6 @@ export {
 	disconnectDevice,
 	disconnectAllDevices,
 	changePassword,
+	sendEmailPasswordReset,
+	resetPassword,
 };

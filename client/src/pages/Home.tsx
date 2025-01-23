@@ -10,6 +10,10 @@ import Explore from '../components/Explore';
 import Search from '../components/Search';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { IDrink } from '../types/drink';
+import { useAuth } from '../context/AuthContext';
+import { FaPlus } from 'react-icons/fa';
+import RedButton from '../components/RedButton';
 
 const Home = () => {
 	const tabs = [
@@ -42,22 +46,61 @@ const Home = () => {
 		formState: { errors },
 	} = useForm<{
 		searchQuery: string;
+		searchDrinks: string;
 	}>();
 	const hasRun = useRef(false);
 	const hasChanged = useRef(false);
 
+	const { logout } = useAuth();
+
 	const searchQuery = watch('searchQuery');
+	const searchDrinks = watch('searchDrinks');
 
 	const TabContent =
 		tabs.find((tab) => tab.id === activeTab)?.component || Feed;
 
 	const [CocktailsData, setCocktailsData] =
 		useState<CocktailsData>(defaultCocktailsData);
+	const [drinks, setDrinks] = useState<IDrink[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const navigate = useNavigate();
 
 	const handleClick = () => {
-		navigate('/cocktail/new'); 
+		navigate('/cocktail/new/build');
+	};
+
+	const getSearchedDrinks = async () => {
+		setGettingData(true);
+		await authGet(
+			`/cocktail/search/?name=${searchDrinks}`,
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data: { cocktails: IDrink[] }) => {
+				setDrinks(data.cocktails);
+			}
+		);
+		setGettingData(false);
+	};
+
+	const getRandomDrinks = async () => {
+		setGettingData(true);
+		await authGet(
+			'/cocktail/random',
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data: { cocktails: IDrink[] }) => {
+				setDrinks(data.cocktails);
+			}
+		);
+		setGettingData(false);
 	};
 
 	const getSearchResults = async (page?: number, loading?: boolean) => {
@@ -70,8 +113,11 @@ const Home = () => {
 
 		await authGet(
 			`/post/search/?page=${page}&query=${searchQuery}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data: CocktailsData) => {
 				if (page === 1) {
@@ -111,8 +157,11 @@ const Home = () => {
 
 		await authGet(
 			`/post/?page=${page}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data: CocktailsData) => {
 				setCocktailsData((prev: CocktailsData) => ({
@@ -132,9 +181,16 @@ const Home = () => {
 	};
 
 	useEffect(() => {
-		if (activeTab !== 'search') {
-			setValue('searchQuery', '');
+		if (activeTab === 'explore') {
+			if (!searchDrinks) {
+				getRandomDrinks();
+			} else {
+				getSearchedDrinks();
+			}
 		}
+	}, [searchDrinks]);
+
+	useEffect(() => {
 		if (activeTab !== 'feed') {
 			hasChanged.current = true;
 		}
@@ -144,12 +200,21 @@ const Home = () => {
 				getFeedPosts(1, true);
 			}
 			if (hasChanged.current) {
-				setCocktailsData(defaultCocktailsData);
-				getFeedPosts(1, false);
+				if (searchQuery) {
+					setCocktailsData(defaultCocktailsData);
+					getFeedPosts(1, false);
+				} else {
+					if (CocktailsData.cocktails.length === 0) {
+						getFeedPosts(1, false);
+					}
+				}
 			}
 		}
 		if (activeTab === 'search') {
 			setCocktailsData(defaultCocktailsData);
+		}
+		if (activeTab !== 'search') {
+			setValue('searchQuery', '');
 		}
 	}, [activeTab]);
 
@@ -183,12 +248,13 @@ const Home = () => {
 							))}
 						</div>
 						{/* Add Cocktail button */}
-						<button
-							className="mt-3 md:mt-16 mb-1 md:mb-4 p-3 mx-4 w-auto bg-[#D93025] rounded-lg text-white flex-col hover:bg-[#D93025]/90 flex items-center"
-							onClick={handleClick}
-						>
-							Add New Cocktail
-						</button>
+						<RedButton
+							handleClick={handleClick}
+							text="Add New Cocktail"
+							Icon={FaPlus}
+							className="mt-3 md:mt-16 mb-1 md:mb-4 p-3 mx-4 w-auto"
+							iconClassName="w-4 h-4"
+						/>
 
 						{/* Tabs for mobile */}
 						<div className="flex md:hidden scrollbar-hide overflow-x-auto space-x-2 p-4">
@@ -212,6 +278,9 @@ const Home = () => {
 					{/* Content container */}
 					<div className="flex-1 bg-[#2a2a2a] p-4 rounded-lg h-fit scrollbar-hide">
 						<TabContent
+							drinks={drinks}
+							gettingData={gettingData}
+							refresh={getRandomDrinks}
 							setCocktails={setCocktailsData}
 							cocktails={CocktailsData.cocktails}
 							fetchMore={

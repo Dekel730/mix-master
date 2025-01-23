@@ -9,6 +9,7 @@ import ImagePreview from '../components/ImagePreview';
 import CocktailForm from '../components/CocktailForm';
 import Loader from '../components/Loader';
 import { MAX_DESCRIPTION_LENGTH } from '../utils/consts';
+import { useAuth } from '../context/AuthContext';
 
 interface UploadedImage {
 	id: string;
@@ -24,6 +25,7 @@ export default function EditCocktail() {
 	const [deletedImages, setDeletedImages] = useState<string[]>([]);
 	const [previewImage, setPreviewImage] = useState<string | null>(null);
 	const hasRunId = useRef<string | undefined>('');
+	const { logout } = useAuth();
 
 	const cocktailSchema = z.object({
 		title: z
@@ -92,8 +94,11 @@ export default function EditCocktail() {
 		setIsLoading(true);
 		await authGet(
 			`/post/${id}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data) => {
 				setData(data.post);
@@ -160,8 +165,11 @@ export default function EditCocktail() {
 		await authPut(
 			`/post/${id}`,
 			formData,
-			(message) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
 				toast.success('Cocktail updated successfully');

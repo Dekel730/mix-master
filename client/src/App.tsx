@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import './App.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './pages/Home';
+import Feed from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
 import CocktailDetails from './pages/CocktailDetails';
 import CocktailNew from './pages/CocktailNew';
+import DrinkDetails from './pages/DrinkDetails';
 import ProtectedRoute from './components/routes/ProtectedRoute';
 import UserRestrictedRoute from './components/routes/UserRestrictedRoute';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -17,37 +18,18 @@ import Header from './components/Header';
 import Loader from './components/Loader';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
+import { useAuth } from './context/AuthContext';
+import Verify from './pages/Verify';
+import EmailPassword from './pages/EmailPassword';
+import ResetPassword from './pages/ResetPassword';
 import EditCocktail from './pages/EditCocktail';
 
 TimeAgo.addDefaultLocale(en);
 
 function App() {
-	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-		() => localStorage.getItem('isAuthenticated') === 'true'
-	);
-
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 
-	useEffect(() => {
-		localStorage.setItem('isAuthenticated', String(isAuthenticated));
-	}, [isAuthenticated]);
-
-	// Update state when localStorage changes
-	useEffect(() => {
-		const handleStorageChange = (event: StorageEvent) => {
-			if (event.key === 'isAuthenticated') {
-				setIsAuthenticated(event.newValue === 'true');
-			}
-		};
-
-		// Add the storage event listener
-		window.addEventListener('storage', handleStorageChange);
-
-		// Clean up the event listener
-		return () => {
-			window.removeEventListener('storage', handleStorageChange);
-		};
-	}, []);
+	const { isAuthenticated } = useAuth();
 
 	if (isLoading) {
 		return <Loader />;
@@ -60,48 +42,61 @@ function App() {
 				clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
 			>
 				<Router>
-					{isAuthenticated && <Header setIsAuthenticated={setIsAuthenticated} setIsLoading={setIsLoading} />}
+					{isAuthenticated && <Header setIsLoading={setIsLoading} />}
 					<Routes>
 						<Route
 							path="/"
 							element={
-								<ProtectedRoute
-									isAuthenticated={isAuthenticated}
-								>
-									<Home />
+								<ProtectedRoute>
+									<Feed />
 								</ProtectedRoute>
+							}
+						/>
+						<Route path="/verify/:id" element={<Verify />} />
+						<Route
+							path="/forgot/password/:token/:email"
+							element={
+								<UserRestrictedRoute>
+									<ResetPassword />
+								</UserRestrictedRoute>
+							}
+						/>
+						<Route
+							path="/forgot/email"
+							element={
+								<UserRestrictedRoute>
+									<EmailPassword />
+								</UserRestrictedRoute>
 							}
 						/>
 						<Route
 							path="/login"
 							element={
-								<UserRestrictedRoute
-									isAuthenticated={isAuthenticated}
-								>
-									<Login
-										setIsAuthenticated={setIsAuthenticated}
-									/>
+								<UserRestrictedRoute>
+									<Login />
 								</UserRestrictedRoute>
 							}
 						/>
 						<Route
 							path="/register"
 							element={
-								<UserRestrictedRoute
-									isAuthenticated={isAuthenticated}
-								>
-									<Register
-										setIsAuthenticated={setIsAuthenticated}
-									/>
+								<UserRestrictedRoute>
+									<Register />
 								</UserRestrictedRoute>
 							}
 						/>
 						<Route
-							path="/cocktail/new"
+							path="/drink/:id"
 							element={
-								<ProtectedRoute
-									isAuthenticated={isAuthenticated}
-								>
+								<ProtectedRoute>
+									<DrinkDetails />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/cocktail/new/:id"
+							element={
+								<ProtectedRoute>
 									<CocktailNew />
 								</ProtectedRoute>
 							}
@@ -109,9 +104,7 @@ function App() {
 						<Route
 							path="/cocktail/:id"
 							element={
-								<ProtectedRoute
-									isAuthenticated={isAuthenticated}
-								>
+								<ProtectedRoute>
 									<CocktailDetails />
 								</ProtectedRoute>
 							}
@@ -119,9 +112,7 @@ function App() {
 						<Route
 							path="/cocktail/:id/edit"
 							element={
-								<ProtectedRoute
-									isAuthenticated={isAuthenticated}
-								>
+								<ProtectedRoute>
 									<EditCocktail />
 								</ProtectedRoute>
 							}
@@ -129,9 +120,7 @@ function App() {
 						<Route
 							path="/user/:id"
 							element={
-								<ProtectedRoute
-									isAuthenticated={isAuthenticated}
-								>
+								<ProtectedRoute>
 									<UserProfile />
 								</ProtectedRoute>
 							}
@@ -139,9 +128,7 @@ function App() {
 						<Route
 							path="/settings"
 							element={
-								<ProtectedRoute
-									isAuthenticated={isAuthenticated}
-								>
+								<ProtectedRoute>
 									<Settings />
 								</ProtectedRoute>
 							}

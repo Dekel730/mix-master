@@ -7,9 +7,10 @@ import {
 	defaultCocktailsData,
 	ICocktail,
 } from '../types/cocktail';
-import { toast } from 'react-toastify';
-import { authDel } from '../utils/requests';
 import Modal from './Modal';
+import { authDel } from '../utils/requests';
+import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 interface CocktailListProps {
 	cocktails: ICocktail[];
@@ -29,6 +30,7 @@ const CocktailList = ({
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [isDeleting, setIsDeleting] = useState<string>('');
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<string>('');
+	const { logout } = useAuth();
 
 	const getCocktails = async (page: number) => {
 		setIsLoading(true);
@@ -42,8 +44,11 @@ const CocktailList = ({
 	const handleDeletePost = async (postId: string) => {
 		await authDel(
 			`/post/${postId}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
 				setCocktails((prev: CocktailsData) => ({
@@ -73,7 +78,6 @@ const CocktailList = ({
 	}, [page]);
 
 	useEffect(() => {
-		console.log(query);
 		if (query === undefined) return;
 		setPage(1);
 		if (query === '') {
@@ -133,7 +137,11 @@ const CocktailList = ({
 						</div>
 					))}
 				</div>
-				{isLoading && <Spinner />}
+				{isLoading && (
+					<div className="flex justify-center w-full">
+						<Spinner width="w-24" height="h-24" />
+					</div>
+				)}
 			</motion.div>
 			<Modal
 				isOpen={isDeleteModalOpen !== ''}

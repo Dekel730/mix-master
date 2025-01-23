@@ -2,7 +2,11 @@ import asyncHandler from 'express-async-handler';
 import { Request, Response, NextFunction } from 'express';
 import Post, { Ingredient, IPost, PostDocument } from '../models/postModel';
 import User from '../models/userModel';
-import { POSTS_PAGE_SIZE } from '../utils/consts';
+import {
+	DIFFICULTY_OPTIONS,
+	LANGUAGE_OPTIONS,
+	POSTS_PAGE_SIZE,
+} from '../utils/consts';
 import { deleteFileFromPath } from '../utils/functions';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
@@ -156,6 +160,16 @@ export const createWithAI = asyncHandler(
 			throw new Error('Please fill all required fields');
 		}
 
+		if (DIFFICULTY_OPTIONS.indexOf(difficulty) === -1) {
+			res.status(400);
+			throw new Error('Invalid difficulty');
+		}
+
+		if (LANGUAGE_OPTIONS.indexOf(language) === -1) {
+			res.status(400);
+			throw new Error('Invalid language');
+		}
+
 		if (!ingredients) {
 			ingredients_object = [];
 		}
@@ -194,13 +208,12 @@ export const createWithAI = asyncHandler(
 			', '
 		)} in ${language} language in JSON format`;
 		const result = await model.generateContent(prompt);
-
+		if (!ingredients) {
+			ingredients_object = [];
+		}
 		const resultJSON: IPost = JSON.parse(result.response.text());
 
-		console.log(resultJSON);
-		console.log(resultJSON.ingredients);
-		console.log(resultJSON.instructions);
-
+		// check if the result is valid
 		// check if the result is valid
 
 		if (
@@ -289,6 +302,10 @@ export const deletePost = asyncHandler(
 
 		await Post.findByIdAndDelete(postId);
 
+		res.status(200).json({
+			success: true,
+			message: 'post deleted successfully',
+		});
 		res.status(200).json({
 			success: true,
 			message: 'post deleted successfully',
@@ -433,7 +450,12 @@ export const searchPosts = asyncHandler(
 		const pageNumber = page ? Number(page) : 1;
 
 		const count: number = await Post.find({
-			$text: { $search: queryS, $caseSensitive: false },
+			$or: [
+				{ title: { $regex: queryS, $options: 'i' } },
+				{ description: { $regex: queryS, $options: 'i' } },
+				{ 'ingredients.name': { $regex: queryS, $options: 'i' } },
+				{ instructions: { $regex: queryS, $options: 'i' } },
+			],
 		}).countDocuments();
 
 		if (queryS.trim().length === 0) {
@@ -442,7 +464,12 @@ export const searchPosts = asyncHandler(
 		}
 
 		const searchResult = await Post.find({
-			$text: { $search: queryS, $caseSensitive: false }, // חיפוש לפי אינדקס טקסט
+			$or: [
+				{ title: { $regex: queryS, $options: 'i' } },
+				{ description: { $regex: queryS, $options: 'i' } },
+				{ 'ingredients.name': { $regex: queryS, $options: 'i' } },
+				{ instructions: { $regex: queryS, $options: 'i' } },
+			],
 		})
 			.limit(POSTS_PAGE_SIZE)
 			.skip(POSTS_PAGE_SIZE * (pageNumber - 1))

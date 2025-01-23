@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FaUser, FaLaptop, FaLock } from 'react-icons/fa';
 import PersonalDetails from '../components/PersonalDetails';
 import ConnectedDevices from '../components/ConnectedDevices';
@@ -7,6 +7,7 @@ import Loader from '../components/Loader';
 import { authGet } from '../utils/requests';
 import { toast } from 'react-toastify';
 import { Device, IUserSettings, userSettingsDefault } from '../types/user';
+import { useAuth } from '../context/AuthContext';
 
 const tabs = [
 	{
@@ -29,7 +30,7 @@ const tabs = [
 	},
 ];
 
-const Settings: React.FC = () => {
+const Settings = () => {
 	const [activeTab, setActiveTab] = useState(tabs[0].id);
 
 	const TabContent =
@@ -38,17 +39,17 @@ const Settings: React.FC = () => {
 	const hasRunUser = useRef<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [user, setUser] = useState<IUserSettings>(userSettingsDefault);
+	const { logout } = useAuth();
 
 	const getUser = async () => {
-		if (import.meta.env.VITE_ENV === 'development') {
-			if (hasRunUser.current) return;
-			hasRunUser.current = true;
-		}
 		setIsLoading(true);
 		await authGet(
 			`/user/`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data: any) => {
 				setUser({
@@ -64,6 +65,10 @@ const Settings: React.FC = () => {
 	};
 
 	useEffect(() => {
+		if (import.meta.env.VITE_ENV === 'development') {
+			if (hasRunUser.current) return;
+			hasRunUser.current = true;
+		}
 		getUser();
 	}, []);
 

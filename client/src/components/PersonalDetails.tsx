@@ -4,7 +4,6 @@ import { FieldValues, useForm } from 'react-hook-form';
 import { FaBook, FaTrash, FaUser, FaVenusMars } from 'react-icons/fa';
 import z from 'zod';
 import { IUserSettings } from '../types/user';
-import Spinner from './Spinner';
 import { authDel, authPut } from '../utils/requests';
 import { toast } from 'react-toastify';
 import Input from './inputs/Input';
@@ -12,14 +11,16 @@ import FileInput from './inputs/FileInput';
 import TextArea from './inputs/TextArea';
 import { GENDER_OPTIONS, MAX_BIO_LENGTH } from '../utils/consts';
 import Modal from './Modal';
-import { deleteAuthLocalStorage } from '../utils/functions';
 import Select from './inputs/Select';
+import { useAuth } from '../context/AuthContext';
+import RedButton from './RedButton';
 
 interface PersonalDetailsProps {
 	user: IUserSettings;
 	setUser: (user: IUserSettings) => void;
 }
 const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
+	const { logout } = useAuth();
 	const schema = z.object({
 		f_name: z.string().nonempty("First name can't be empty"),
 		l_name: z.string().nonempty("Last name can't be empty"),
@@ -45,11 +46,14 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 		setIsLoading(true);
 		await authDel(
 			'/user',
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
-				deleteAuthLocalStorage();
+				logout();
 				toast.info('Account deleted successfully');
 				setIsDeleteModalOpen(false);
 			}
@@ -72,8 +76,11 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 		await authPut(
 			'/user',
 			formData,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data: any) => {
 				localStorage.setItem('user', JSON.stringify(data.user));
@@ -157,12 +164,12 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 						<FaTrash className="mr-2" />
 						Delete Account
 					</button>
-					<button
+					<RedButton
+						text="Save"
+						loading={isLoading}
 						type="submit"
-						className="bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors px-6"
-					>
-						{isLoading ? <Spinner /> : 'Save'}
-					</button>
+						className="px-6 h-12"
+					/>
 				</div>
 				<Modal
 					isOpen={isDeleteModalOpen}

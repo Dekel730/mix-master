@@ -4,9 +4,12 @@ import { useState } from 'react';
 import { authGet } from '../utils/requests';
 import { toast } from 'react-toastify';
 import Loader from './Loader';
-import { deleteAuthLocalStorage, formatDate } from '../utils/functions';
+import { formatDate } from '../utils/functions';
 import ThanosSnap from './ThanosSnap';
 import Spinner from './Spinner';
+import { useAuth } from '../context/AuthContext';
+import RedButton from './RedButton';
+import { AiOutlineDisconnect } from 'react-icons/ai';
 
 interface ConnectedDevicesProps {
 	devices: Device[];
@@ -15,6 +18,7 @@ interface ConnectedDevicesProps {
 
 const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 	const deviceId = localStorage.getItem('device_id') || '';
+	const { logout } = useAuth();
 
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [isLoadingItem, setIsLoadingItem] = useState<string>('');
@@ -37,15 +41,13 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 		setIsLoadingItem(id);
 		await authGet(
 			`/user/disconnect/${id}`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
-				if (deviceId === id) {
-					deleteAuthLocalStorage();
-					toast.info('This device has been disconnected');
-					return;
-				}
 				setIsDisintegrating(id);
 				setTimeout(() => {
 					setIsDisintegrating('');
@@ -55,6 +57,10 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 							(device) => device.device_id !== id
 						),
 					}));
+					if (deviceId === id) {
+						toast.info('This device has been disconnected');
+						logout();
+					}
 				}, 2500);
 			}
 		);
@@ -65,12 +71,15 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 		setIsLoading(true);
 		await authGet(
 			`/user/disconnect`,
-			(message: string) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			() => {
-				deleteAuthLocalStorage();
 				toast.info('All devices have been disconnected');
+				logout();
 			}
 		);
 		setIsLoading(false);
@@ -84,12 +93,12 @@ const ConnectedDevices = ({ devices, setUser }: ConnectedDevicesProps) => {
 		<div>
 			<div className="flex justify-between items-center mb-4">
 				<h2 className="text-xl font-semibold">Connected Devices</h2>
-				<button
-					onClick={disconnectAllDevices}
-					className="bg-[#D93025] text-white px-4 py-2 rounded hover:bg-[#B8271F] transition-colors"
-				>
-					Disconnect All
-				</button>
+				<RedButton
+					handleClick={disconnectAllDevices}
+					text="Disconnect All"
+					Icon={AiOutlineDisconnect}
+					iconClassName="w-5 h-5"
+				/>
 			</div>
 			{devices.length > 0 ? (
 				<ul className="space-y-4">

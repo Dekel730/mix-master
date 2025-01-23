@@ -11,12 +11,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '../components/inputs/Input';
 import PasswordInput from '../components/inputs/PasswordInput';
 import { getDeviceDetails } from '../utils/functions';
+import { useAuth } from '../context/AuthContext';
+import RedButton from '../components/RedButton';
 
-interface IProps {
-	setIsAuthenticated: (isAuthenticated: boolean) => void;
-}
-const Login = ({ setIsAuthenticated }: IProps) => {
+const Login = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [resend, setResend] = useState<boolean>(false);
+	const { login } = useAuth();
 
 	const device = getDeviceDetails();
 
@@ -27,8 +28,11 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 	const {
 		register,
 		handleSubmit,
+		watch,
 		formState: { errors },
 	} = useForm({ resolver: zodResolver(schema) });
+
+	const email = watch('email');
 
 	const successfulLogin = (data: any) => {
 		localStorage.setItem('user', JSON.stringify(data.user));
@@ -41,7 +45,25 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 			new Date(Date.now() + expiresIn).toISOString()
 		);
 		toast.success('Logged in successfully');
-		setIsAuthenticated(true);
+		login(data.user);
+	};
+
+	const resendVerificationEmail = async () => {
+		setIsLoading(true);
+		await post(
+			'/user/resend',
+			{
+				email,
+			},
+			(message: string) => {
+				toast.error(message);
+			},
+			() => {
+				toast.success('Verification email sent');
+				setResend(false);
+			}
+		);
+		setIsLoading(false);
 	};
 
 	const handleLogin = async (data: FieldValues) => {
@@ -54,6 +76,9 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 				device,
 			},
 			(message: string) => {
+				if (message === 'Please verify your email') {
+					setResend(true);
+				}
 				toast.error(message);
 			},
 			(data: any) => {
@@ -133,14 +158,31 @@ const Login = ({ setIsAuthenticated }: IProps) => {
 										placeholder="Enter your password"
 										label={'Password'}
 									/>
+									<div
+										className="flex justify-end w-full"
+										style={{ marginTop: '.4rem' }}
+									>
+										<Link
+											className="text-sm hover:text-[#D93025] cursor-pointer hover:underline"
+											to={'/forgot/email'}
+										>
+											Forgot password?
+										</Link>
+									</div>
 								</div>
-
-								<button
+								<RedButton
+									text="Log in"
 									type="submit"
-									className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors hover:border-gray-500"
-								>
-									Log in
-								</button>
+									className="w-full h-12 "
+								/>
+								{resend && (
+									<button
+										className="text-white rounded-xl font-medium transition-colors w-full border-[#D93025] hover:border-[#C12717] bg-[#2a2a2a] hover:bg-[#333333]"
+										onClick={resendVerificationEmail}
+									>
+										Resend Verification Email
+									</button>
+								)}
 								<div className="relative">
 									<hr className="border-t border-gray-600" />
 									<span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#212121] px-2 text-gray-400 text-sm">

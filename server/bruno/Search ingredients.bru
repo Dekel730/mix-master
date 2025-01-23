@@ -1,0 +1,19 @@
+meta {
+  name: Search ingredients
+  type: http
+  seq: 10
+}
+
+get {
+  url: http://localhost:3000/api/cocktail/ingredients?name=w
+  body: none
+  auth: bearer
+}
+
+params:query {
+  name: w
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NjFmNTFjZmIxNTBkZjkyN2U3MzI0MSIsImlhdCI6MTczNzMxMTEyOCwiZXhwIjoxNzM3MzE0NzI4fQ.QvVAA4PdA420zLfybDn8BB_zKTak1RVDtzFsca6SxXI
+}

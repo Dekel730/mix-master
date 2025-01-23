@@ -15,13 +15,12 @@ import FileInput from '../components/inputs/FileInput';
 import { getDeviceDetails } from '../utils/functions';
 import { GENDER_OPTIONS } from '../utils/consts';
 import Select from '../components/inputs/Select';
+import { useAuth } from '../context/AuthContext';
+import RedButton from '../components/RedButton';
 
-interface IProps {
-	setIsAuthenticated: (isAuthenticated: boolean) => void;
-}
-
-const Register = ({ setIsAuthenticated }: IProps) => {
+const Register = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const { login } = useAuth();
 
 	const navigate = useNavigate();
 
@@ -42,6 +41,7 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 				.string()
 				.regex(password_regex, 'Password is not strong enough'),
 			confirmPassword: z.string(),
+			gender: z.enum(['Male', 'Female', 'Other']),
 		})
 		.refine((data) => data.password === data.confirmPassword, {
 			path: ['confirmPassword'], // Path to show the error message on the confirmPassword field
@@ -65,7 +65,7 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 			'expiresAt',
 			new Date(Date.now() + expiresIn).toISOString()
 		);
-		setIsAuthenticated(true);
+		login(data.user);
 	};
 
 	const handleRegister = async (data: FieldValues) => {
@@ -195,10 +195,11 @@ const Register = ({ setIsAuthenticated }: IProps) => {
 										setSelectedFile={setSelectedFile}
 									/>
 								</div>
-
-								<button className="w-full bg-[#D93025] hover:bg-[#C12717] text-white h-12 rounded-xl font-medium transition-colors">
-									Register
-								</button>
+								<RedButton
+									text="Register"
+									type="submit"
+									className="h-12 w-full"
+								/>
 
 								<div className="relative">
 									<hr className="border-t border-gray-600" />

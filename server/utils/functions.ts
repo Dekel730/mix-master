@@ -4,7 +4,8 @@ import fs from 'fs';
 export const sendEmail = async (
 	receiver: string,
 	subject: string,
-	text: string
+	text: string,
+	html?: string
 ): Promise<boolean> => {
 	var transporter = createTransport({
 		service: process.env.EMAIL_SERVICE,
@@ -19,6 +20,7 @@ export const sendEmail = async (
 		to: receiver,
 		subject: subject,
 		text: text,
+		html: html,
 	};
 	let success = false;
 	await transporter

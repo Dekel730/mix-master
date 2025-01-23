@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FieldValues, useForm } from 'react-hook-form';
 import ImagePreview from '../components/ImagePreview';
 import { MAX_DESCRIPTION_LENGTH } from '../utils/consts';
@@ -6,11 +6,12 @@ import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
-import { authPost } from '../utils/requests';
-import { useNavigate } from 'react-router-dom';
+import { authGet, authPost } from '../utils/requests';
+import { useNavigate, useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import CocktailForm from '../components/CocktailForm';
 import AICocktailForm from '../components/AICocktailForm';
+import { useAuth } from '../context/AuthContext';
 
 interface UploadedImage {
 	id: string;
@@ -20,9 +21,14 @@ interface UploadedImage {
 
 export default function CreateCocktail() {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [aiLoading, setIsAiLoading] = useState<boolean>(false);
 	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 	const [previewImage, setPreviewImage] = useState<string | null>(null);
 	const [activeOption, setActiveOption] = useState<'manual' | 'ai'>('manual');
+	const [ai, setAi] = useState<boolean>(false);
+	const { logout } = useAuth();
+	const { id } = useParams();
+	const runId = useRef<string>('');
 
 	const navigate = useNavigate();
 
@@ -64,10 +70,31 @@ export default function CreateCocktail() {
 			.min(1, 'At least one instruction is required'),
 	});
 
+	const aiSchema = z.object({
+		language: z.enum([
+			'English',
+			'Hebrew',
+			'Spanish',
+			'French',
+			'German',
+			'Italian',
+		]),
+		difficulty: z.enum(['easy', 'medium', 'expert']),
+		ingredients: z.array(
+			z.object({
+				name: z
+					.string()
+					.nonempty('Ingredient name is required')
+					.max(50, 'Ingredient name is too long'),
+			})
+		),
+	});
+
 	const {
 		control,
 		register,
 		handleSubmit,
+		setValue,
 		watch,
 		formState: { errors },
 	} = useForm({
@@ -80,7 +107,66 @@ export default function CreateCocktail() {
 		},
 	});
 
-	console.log(errors);
+	const {
+		register: registerAI,
+		control: controlAI,
+		watch: watchAI,
+		handleSubmit: handleSubmitAI,
+		formState: { errors: errorsAI },
+	} = useForm({
+		resolver: zodResolver(aiSchema),
+		defaultValues: {
+			language: 'English',
+			difficulty: 'easy',
+			ingredients: [{ name: '' }],
+		},
+	});
+
+	const onAISubmit = async (data: FieldValues) => {
+		setIsAiLoading(true);
+		await authPost(
+			'/post/ai',
+			{
+				...data,
+				ingredients: data.ingredients.map(
+					(ingredient: { name: string }) => ingredient.name
+				),
+			},
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data: any) => {
+				setActiveOption('manual');
+				setData(data.post);
+				setAi(true);
+				toast.success('AI generated cocktail');
+			}
+		);
+		setIsAiLoading(false);
+	};
+
+	const setData = (data: {
+		title: string;
+		description: string;
+		ingredients: {
+			name: string;
+			amount: string;
+		}[];
+		instructions: string[];
+	}) => {
+		setValue('title', data.title);
+		setValue('description', data.description);
+		setValue('ingredients', data.ingredients);
+		setValue(
+			'instructions',
+			data.instructions.map((instruction: string) => ({
+				name: instruction,
+			}))
+		);
+	};
 
 	const onSubmit = async (data: FieldValues) => {
 		setIsLoading(true);
@@ -96,14 +182,18 @@ export default function CreateCocktail() {
 				)
 			)
 		);
+		formData.append('ai', ai.toString());
 		uploadedImages.forEach((image) => {
 			if (image.file) formData.append('images', image.file);
 		});
 		await authPost(
 			'/post',
 			formData,
-			(message) => {
+			(message: string, auth?: boolean) => {
 				toast.error(message);
+				if (auth) {
+					logout();
+				}
 			},
 			(data) => {
 				toast.success('Cocktail created successfully');
@@ -128,6 +218,32 @@ export default function CreateCocktail() {
 			value: 'ai',
 		},
 	];
+
+	const getCocktailData = async () => {
+		setIsLoading(true);
+		await authGet(
+			`/cocktail/${id}`,
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data) => {
+				setData(data.cocktail);
+			}
+		);
+		setIsLoading(false);
+	};
+
+	useEffect(() => {
+		if (id && id !== 'build') {
+			if (runId.current !== id) {
+				runId.current = id;
+				getCocktailData();
+			}
+		}
+	}, []);
 
 	if (isLoading) {
 		return <Loader />;
@@ -154,7 +270,15 @@ export default function CreateCocktail() {
 						handleSubmit={handleSubmit}
 					/>
 				) : (
-					<AICocktailForm />
+					<AICocktailForm
+						register={registerAI}
+						errors={errorsAI}
+						control={controlAI}
+						handleSubmit={handleSubmitAI}
+						watch={watchAI}
+						onSubmit={onAISubmit}
+						loading={aiLoading}
+					/>
 				)}
 			</div>
 
