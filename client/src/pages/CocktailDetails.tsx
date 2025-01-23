@@ -283,7 +283,36 @@ const CocktailDisplay: React.FC = () => {
 				}));
 			}
 		);
-	}
+	};
+
+	const deleteComment = (commentId: string) => {
+		setCommentsData((prev) => ({
+			...prev,
+			comments: prev.comments.filter(
+				(comment) => comment._id !== commentId
+			),
+			count: prev.count - 1,
+			pages: Math.ceil((prev.count - 1) / 5),
+		}));
+	};
+
+	const deleteReply = (replyId: string, commentId: string) => {
+		setCommentsData((prev) => ({
+			...prev,
+			comments: prev.comments.map((comment) => {
+				if (comment._id === commentId) {
+					return {
+						...comment,
+						repliesCount: comment.repliesCount - 1,
+						replies: comment.replies.filter(
+							(reply) => reply._id !== replyId
+						),
+					};
+				}
+				return comment;
+			}),
+		}));
+	};
 
 	const handleDeletePost = async () => {
 		setIsLoading(true);
@@ -472,6 +501,8 @@ const CocktailDisplay: React.FC = () => {
 							errorsReply={errorsReply}
 							setReplyingTo={setReplyingTo}
 							getReplies={getReplies}
+							deleteComment={deleteComment}
+							deleteReply={deleteReply}
 						/>
 					</div>
 				</div>
