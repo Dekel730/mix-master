@@ -33,9 +33,13 @@ const EmailPassword = () => {
 			(message: string) => {
 				toast.error(message);
 			},
-			() => {
-				toast.success('Email sent');
-				navigate('/login');
+			(data) => {
+				if (data.sent) {
+					toast.success('Email sent');
+					navigate('/login');
+				} else {
+					toast.error('Email not sent');
+				}
 			}
 		);
 	};
@@ -63,7 +67,8 @@ const EmailPassword = () => {
 									Forgot password
 								</h2>
 								<p className="text-gray-400 text-center mb-8">
-									Enter your email address to reset your password
+									Enter your email address to reset your
+									password
 								</p>
 								<Input
 									label="Email"
