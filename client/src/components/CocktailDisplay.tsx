@@ -50,7 +50,7 @@ const CocktailDisplay = ({
 		await authPost(
 			`/post/${postId}/like`,
 			{},
-			(message) => toast.error(message), // אם יש טעות, מציגים הודעה
+			(message) => toast.error(message), 
 			() => {
 				likeUnlike({
 					...cocktail,

@@ -17,6 +17,7 @@ import Header from './components/Header';
 import Loader from './components/Loader';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
+import EditCocktail from './pages/EditCocktail';
 
 TimeAgo.addDefaultLocale(en);
 
@@ -112,6 +113,16 @@ function App() {
 									isAuthenticated={isAuthenticated}
 								>
 									<CocktailDetails />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/cocktail/:id/edit"
+							element={
+								<ProtectedRoute
+									isAuthenticated={isAuthenticated}
+								>
+									<EditCocktail />
 								</ProtectedRoute>
 							}
 						/>

@@ -1,16 +1,14 @@
-import { useState } from 'react';
-import { FieldValues, useForm } from 'react-hook-form';
-import ImagePreview from '../components/ImagePreview';
-import { MAX_DESCRIPTION_LENGTH } from '../utils/consts';
+import { useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'react-toastify';
-import Loader from '../components/Loader';
-import { authPost } from '../utils/requests';
-import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
+import { authGet, authPut } from '../utils/requests';
+import ImagePreview from '../components/ImagePreview';
 import CocktailForm from '../components/CocktailForm';
-import AICocktailForm from '../components/AICocktailForm';
+import Loader from '../components/Loader';
+import { MAX_DESCRIPTION_LENGTH } from '../utils/consts';
 
 interface UploadedImage {
 	id: string;
@@ -18,13 +16,14 @@ interface UploadedImage {
 	preview: string;
 }
 
-export default function CreateCocktail() {
+export default function EditCocktail() {
+	const { id } = useParams();
+	const navigate = useNavigate();
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+	const [deletedImages, setDeletedImages] = useState<string[]>([]);
 	const [previewImage, setPreviewImage] = useState<string | null>(null);
-	const [activeOption, setActiveOption] = useState<'manual' | 'ai'>('manual');
-
-	const navigate = useNavigate();
+	const hasRunId = useRef<string | undefined>('');
 
 	const cocktailSchema = z.object({
 		title: z
@@ -64,11 +63,16 @@ export default function CreateCocktail() {
 			.min(1, 'At least one instruction is required'),
 	});
 
+	const handleDeleteImages = (id: string) => {
+		setDeletedImages([...deletedImages, id]);
+	};
+
 	const {
 		control,
 		register,
 		handleSubmit,
 		watch,
+		setValue,
 		formState: { errors },
 	} = useForm({
 		resolver: zodResolver(cocktailSchema),
@@ -80,9 +84,59 @@ export default function CreateCocktail() {
 		},
 	});
 
-	console.log(errors);
+	const getCocktail = async () => {
+		if (!id) {
+			toast.error('Cocktail ID is required');
+			return;
+		}
+		setIsLoading(true);
+		await authGet(
+			`/post/${id}`,
+			(message: string) => {
+				toast.error(message);
+			},
+			(data) => {
+				setData(data.post);
+			}
+		);
+		setIsLoading(false);
+	};
 
-	const onSubmit = async (data: FieldValues) => {
+	useEffect(() => {
+		if (id !== hasRunId.current) {
+			getCocktail();
+			hasRunId.current = id;
+		}
+	}, [id]);
+
+	const setData = (data: {
+		title: string;
+		description: string;
+		ingredients: {
+			name: string;
+			amount: string;
+		}[];
+		instructions: string[];
+		images: string[];
+	}) => {
+		setValue('title', data.title);
+		setValue('description', data.description);
+		setValue('ingredients', data.ingredients);
+		setValue(
+			'instructions',
+			data.instructions.map((instruction: string) => ({
+				name: instruction,
+			}))
+		);
+		setUploadedImages(
+			data.images.map((image: string) => ({
+				id: image,
+				preview: `${import.meta.env.VITE_API_ADDRESS}/${image}`,
+			}))
+		);
+	};
+
+	const onSubmit = async (data: any) => {
 		setIsLoading(true);
 		const formData = new FormData();
 		formData.append('title', data.title);
@@ -96,18 +150,22 @@ export default function CreateCocktail() {
 				)
 			)
 		);
+
+		formData.append('deletedImages', JSON.stringify(deletedImages));
+
 		uploadedImages.forEach((image) => {
 			if (image.file) formData.append('images', image.file);
 		});
-		await authPost(
-			'/post',
+
+		await authPut(
+			`/post/${id}`,
 			formData,
 			(message) => {
 				toast.error(message);
 			},
-			(data) => {
-				toast.success('Cocktail created successfully');
-				navigate(`/cocktail/${data.post._id}`);
+			() => {
+				toast.success('Cocktail updated successfully');
+				navigate(`/cocktail/${id}`);
 			},
 			{
 				'Content-Type': 'multipart/form-data',
@@ -116,19 +174,6 @@ export default function CreateCocktail() {
 		setIsLoading(false);
 	};
 
-	const options = [
-		{
-			label: 'Create your own',
-			onClick: () => setActiveOption('manual'),
-			value: 'manual',
-		},
-		{
-			label: 'Create with AI',
-			onClick: () => setActiveOption('ai'),
-			value: 'ai',
-		},
-	];
-
 	if (isLoading) {
 		return <Loader />;
 	}
@@ -136,26 +181,20 @@ export default function CreateCocktail() {
 	return (
 		<main className="bg-[#121212]">
 			<div className="flex flex-col lg:flex-row p-4 justify-center">
-				<Sidebar
-					activeOption={activeOption}
-					options={options}
-					title="Create"
+				<CocktailForm
+					register={register}
+					control={control}
+					errors={errors}
+					watch={watch}
+					uploadedImages={uploadedImages}
+					setUploadedImages={setUploadedImages}
+					setPreviewImage={setPreviewImage}
+					onSubmit={onSubmit}
+					handleSubmit={handleSubmit}
+					handleDeleteImages={handleDeleteImages}
+					title="Edit Cocktail"
+					submitButtonName="Update Cocktail"
 				/>
-				{activeOption === 'manual' ? (
-					<CocktailForm
-						register={register}
-						control={control}
-						errors={errors}
-						watch={watch}
-						uploadedImages={uploadedImages}
-						setUploadedImages={setUploadedImages}
-						setPreviewImage={setPreviewImage}
-						onSubmit={onSubmit}
-						handleSubmit={handleSubmit}
-					/>
-				) : (
-					<AICocktailForm />
-				)}
 			</div>
 
 			<ImagePreview

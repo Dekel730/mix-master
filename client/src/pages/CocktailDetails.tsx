@@ -122,12 +122,12 @@ const CocktailDisplay: React.FC = () => {
 		await authPost(
 			`/post/${postId}/like`,
 			{},
-			(message) => toast.error(message), // אם יש טעות, מציגים הודעה
+			(message) => toast.error(message),
 			() => {
 				setCocktail((prev) => {
 					const updatedLikes = prev.likes.includes(user._id)
-						? prev.likes.filter((id) => id !== user._id) // אם המשתמש כבר לייק, מבצעים הסרה
-						: [...prev.likes, user._id]; // אחרת, מוסיפים את המשתמש ללייקים
+						? prev.likes.filter((id) => id !== user._id)
+						: [...prev.likes, user._id];
 					return {
 						...prev,
 						likes: updatedLikes,
