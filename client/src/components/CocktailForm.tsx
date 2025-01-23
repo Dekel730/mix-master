@@ -33,6 +33,9 @@ interface CocktailFormProps {
 	uploadedImages: UploadedImage[];
 	setUploadedImages: React.Dispatch<React.SetStateAction<UploadedImage[]>>;
 	setPreviewImage: React.Dispatch<React.SetStateAction<string | null>>;
+	handleDeleteImages?: (id: string) => void;
+	title?: string;
+	submitButtonName?: string;
 }
 
 interface IForm {
@@ -44,7 +47,7 @@ interface IForm {
 
 interface UploadedImage {
 	id: string;
-	file: File;
+	file?: File;
 	preview: string;
 }
 
@@ -58,6 +61,9 @@ const CocktailForm = ({
 	uploadedImages,
 	setUploadedImages,
 	setPreviewImage,
+	handleDeleteImages,
+	title = 'Create a Cocktail',
+	submitButtonName = 'Create Cocktail',
 }: CocktailFormProps) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const descriptionValue = watch('description', '');
@@ -96,6 +102,9 @@ const CocktailForm = ({
 
 	const deleteImage = (id: string) => {
 		setUploadedImages(uploadedImages.filter((img) => img.id !== id));
+		if (handleDeleteImages) {
+			handleDeleteImages(id);
+		}
 	};
 
 	const openImagePreview = (preview: string) => {
@@ -108,7 +117,7 @@ const CocktailForm = ({
 			className="flex-grow w-full max-w-3xl bg-[#212121] rounded-3xl p-8 shadow-xl items-start"
 		>
 			<h2 className="text-white text-3xl font-bold text-center mb-8">
-				Create a Cocktail
+				{title}
 			</h2>
 
 			<Input
@@ -299,11 +308,11 @@ const CocktailForm = ({
 				</div>
 			</div>
 			<RedButton
-				text="Create Cocktail"
+				text={submitButtonName}
 				Icon={FaCocktail}
 				type="submit"
 				className="h-12 w-full"
-				iconClassName='w-5 h-5'
+				iconClassName="w-5 h-5"
 			/>
 		</form>
 	);

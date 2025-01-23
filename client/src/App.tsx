@@ -22,6 +22,7 @@ import { useAuth } from './context/AuthContext';
 import Verify from './pages/Verify';
 import EmailPassword from './pages/EmailPassword';
 import ResetPassword from './pages/ResetPassword';
+import EditCocktail from './pages/EditCocktail';
 
 TimeAgo.addDefaultLocale(en);
 
@@ -105,6 +106,14 @@ function App() {
 							element={
 								<ProtectedRoute>
 									<CocktailDetails />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/cocktail/:id/edit"
+							element={
+								<ProtectedRoute>
+									<EditCocktail />
 								</ProtectedRoute>
 							}
 						/>

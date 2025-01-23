@@ -322,15 +322,14 @@ export const updatePost = asyncHandler(
 			description,
 			ingredients,
 			instructions,
+			deletedImages
 		}: {
 			title: string;
 			description: string;
 			ingredients: string;
 			instructions: string;
-			deletedImages: string[];
+			deletedImages: string;
 		} = req.body;
-
-		let { deletedImages }: { deletedImages: string[] } = req.body;
 
 		let images: string[] = [];
 		if (req.files) {
@@ -338,9 +337,9 @@ export const updatePost = asyncHandler(
 				(file: Express.Multer.File) => file.path
 			);
 		}
-
-		if (!deletedImages) {
-			deletedImages = [];
+		let deletedImagesArr: string[] = [];
+		if (deletedImages) {
+			deletedImagesArr = JSON.parse(deletedImages);
 		}
 
 		const { ingredients_object, instructions_object } = checkRequired(
@@ -367,10 +366,10 @@ export const updatePost = asyncHandler(
 		post.ingredients = ingredients_object;
 		post.instructions = instructions_object;
 		post.images = [...post.images, ...images];
-		post.images = post.images.filter((img) => !deletedImages.includes(img));
+		post.images = post.images.filter((img) => !deletedImagesArr.includes(img));
 
 		let promises: Promise<boolean>[] = [];
-		deletedImages.forEach((img: string) => {
+		deletedImagesArr.forEach((img: string) => {
 			promises.push(deleteFileFromPath(img));
 		});
 

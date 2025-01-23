@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 
 interface UploadedImage {
 	id: string;
-	file: File;
+	file?: File;
 	preview: string;
 }
 
@@ -184,7 +184,7 @@ export default function CreateCocktail() {
 		);
 		formData.append('ai', ai.toString());
 		uploadedImages.forEach((image) => {
-			formData.append('images', image.file);
+			if (image.file) formData.append('images', image.file);
 		});
 		await authPost(
 			'/post',
