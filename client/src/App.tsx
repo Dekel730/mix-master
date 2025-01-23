@@ -19,6 +19,9 @@ import Loader from './components/Loader';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
 import { useAuth } from './context/AuthContext';
+import Verify from './pages/Verify';
+import EmailPassword from './pages/EmailPassword';
+import ResetPassword from './pages/ResetPassword';
 
 TimeAgo.addDefaultLocale(en);
 
@@ -46,6 +49,23 @@ function App() {
 								<ProtectedRoute>
 									<Feed />
 								</ProtectedRoute>
+							}
+						/>
+						<Route path="/verify/:id" element={<Verify />} />
+						<Route
+							path="/forgot/password/:token/:email"
+							element={
+								<UserRestrictedRoute>
+									<ResetPassword />
+								</UserRestrictedRoute>
+							}
+						/>
+						<Route
+							path="/forgot/email"
+							element={
+								<UserRestrictedRoute>
+									<EmailPassword />
+								</UserRestrictedRoute>
 							}
 						/>
 						<Route

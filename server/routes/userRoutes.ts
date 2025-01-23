@@ -17,6 +17,8 @@ import {
 	disconnectAllDevices,
 	disconnectDevice,
 	changePassword,
+	resetPassword,
+	sendEmailPasswordReset
 } from '../controllers/userController';
 import upload from '../config/storage';
 
@@ -38,5 +40,7 @@ router.get('/:id', authUser, getUser);
 router.put('/', authUser, upload.single('picture'), updateUser);
 router.post('/google', googleLogin);
 router.post('/resend', resendEmail);
+router.post('/forgot/email', sendEmailPasswordReset);
+router.post('/forgot/password/:token/:email', resetPassword);
 
 export default router;

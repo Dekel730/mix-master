@@ -42,10 +42,6 @@ const Settings = () => {
 	const { logout } = useAuth();
 
 	const getUser = async () => {
-		if (import.meta.env.VITE_ENV === 'development') {
-			if (hasRunUser.current) return;
-			hasRunUser.current = true;
-		}
 		setIsLoading(true);
 		await authGet(
 			`/user/`,
@@ -69,6 +65,10 @@ const Settings = () => {
 	};
 
 	useEffect(() => {
+		if (import.meta.env.VITE_ENV === 'development') {
+			if (hasRunUser.current) return;
+			hasRunUser.current = true;
+		}
 		getUser();
 	}, []);
 

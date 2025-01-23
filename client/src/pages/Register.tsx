@@ -41,6 +41,7 @@ const Register = () => {
 				.string()
 				.regex(password_regex, 'Password is not strong enough'),
 			confirmPassword: z.string(),
+			gender: z.enum(['Male', 'Female', 'Other']),
 		})
 		.refine((data) => data.password === data.confirmPassword, {
 			path: ['confirmPassword'], // Path to show the error message on the confirmPassword field
