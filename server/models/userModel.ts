@@ -12,6 +12,7 @@ export interface IToken {
 	createdAt: Date;
 	name: string;
 	type: string;
+	unique: string;
 }
 
 export interface IUser {
@@ -22,7 +23,7 @@ export interface IUser {
 	password: string;
 	isVerified: boolean;
 	resetPasswordToken: string;
-	resetPasswordTokenExpiry: Date;
+	resetPasswordTokenExpiry: Date | null;
 	picture?: string;
 	gender: 'Male' | 'Female' | 'Other';
 	followers: mongoose.Schema.Types.ObjectId[];
@@ -143,6 +144,9 @@ const UserScheme = new mongoose.Schema<IUser>(
 					type: String,
 				},
 				type: {
+					type: String,
+				},
+				unique: {
 					type: String,
 				},
 			},
