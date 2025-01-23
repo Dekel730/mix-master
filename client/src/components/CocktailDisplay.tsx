@@ -98,6 +98,8 @@ const CocktailDisplay = ({
 						{cocktail.title}
 					</h1>
 				</Link>
+				<p className="text-sm text-gray-200">By {cocktail.description}</p>
+				{cocktail.images.length > 1 && 
 				<Carousel
 					showThumbs={false}
 					showStatus={false}
@@ -117,7 +119,7 @@ const CocktailDisplay = ({
 							/>
 						</div>
 					))}
-				</Carousel>
+				</Carousel>}
 
 				<div className="flex items-center space-x-4">
 					<LikeButton
