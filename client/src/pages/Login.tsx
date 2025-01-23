@@ -58,9 +58,11 @@ const Login = () => {
 			(message: string) => {
 				toast.error(message);
 			},
-			() => {
-				toast.success('Verification email sent');
-				setResend(false);
+			(data) => {
+				if (data.sent) {
+					toast.success('Verification email sent');
+					setResend(false);
+				}
 			}
 		);
 		setIsLoading(false);

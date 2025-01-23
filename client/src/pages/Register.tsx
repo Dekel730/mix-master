@@ -85,9 +85,13 @@ const Register = () => {
 			(message: string) => {
 				toast.error(message);
 			},
-			() => {
+			(data) => {
 				console.log('User registered');
-				toast.info('Please verify your email address');
+				if (!data.sent) {
+					toast.error('Email not sent');
+				} else {
+					toast.info('Please verify your email address');
+				}
 				navigate('/login');
 			},
 			{

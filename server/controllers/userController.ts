@@ -753,7 +753,7 @@ const sendEmailPasswordReset = asyncHandler(
 		user.save();
 		const htmlContent = `
 			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-				<img src="${process.env.HOST_ADDRESS}/cocktail.png" alt="Mix Master Logo" style="width: 100px; display: block; margin: 0 auto 20px;" />
+				<img src="${process.env.HOST_ADDRESS}/logo.png" alt="Mix Master Logo" style="width: 100px; display: block; margin: 0 auto 20px;" />
 				<h2 style="text-align: center; color: #333;">Reset Your Password</h2>
 				<p>Hi,</p>
 				<p>We received a request to reset your password. You can reset it by clicking the link below:</p>
@@ -766,15 +766,16 @@ const sendEmailPasswordReset = asyncHandler(
 			</div>
 		`;
 
-		sendEmail(
+		const sent = sendEmail(
 			email,
 			'Reset your password - Mix Master',
 			`Reset your password: ${process.env.HOST_ADDRESS}/forgot/password/${token}/${email}`,
 			htmlContent
 		);
+
 		res.json({
 			success: true,
-			message: 'Email sent',
+			sent,
 		});
 	}
 );
