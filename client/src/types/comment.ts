@@ -7,6 +7,7 @@ export interface IComment {
     content: string;
     likes: string[];
     replies: IComment[];
+    repliesCount: number;
     createdAt: string;
 };
 

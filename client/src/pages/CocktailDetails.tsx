@@ -259,6 +259,32 @@ const CocktailDisplay: React.FC = () => {
 		return result;
 	};
 
+	const getReplies = async (commentId: string, page: number) => {
+		await authGet(
+			`/comment/${commentId}/replies?page=${page}`,
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data) => {
+				setCommentsData((prev) => ({
+					...prev,
+					comments: prev.comments.map((comment) => {
+						if (comment._id === commentId) {
+							return {
+								...comment,
+								replies: [...comment.replies, ...data.replies],
+							};
+						}
+						return comment;
+					}),
+				}));
+			}
+		);
+	}
+
 	const handleDeletePost = async () => {
 		setIsLoading(true);
 		setIsDeleteModalOpen('');
@@ -445,6 +471,7 @@ const CocktailDisplay: React.FC = () => {
 							registerReply={registerReply}
 							errorsReply={errorsReply}
 							setReplyingTo={setReplyingTo}
+							getReplies={getReplies}
 						/>
 					</div>
 				</div>
