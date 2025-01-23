@@ -22,6 +22,7 @@ export interface IUser {
 	password: string;
 	isVerified: boolean;
 	resetPasswordToken: string;
+	resetPasswordTokenExpiry: Date;
 	picture?: string;
 	gender: 'Male' | 'Female' | 'Other';
 	followers: mongoose.Schema.Types.ObjectId[];
@@ -104,6 +105,9 @@ const UserScheme = new mongoose.Schema<IUser>(
 		resetPasswordToken: {
 			type: String,
 		},
+		resetPasswordTokenExpiry: {
+			type: Date,
+		},
 		picture: {
 			type: String,
 		},
@@ -146,6 +150,8 @@ const UserScheme = new mongoose.Schema<IUser>(
 	},
 	{ timestamps: true }
 );
+
+UserScheme.index({ resetPasswordTokenExpiry: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<IUser>('User', UserScheme);
 
