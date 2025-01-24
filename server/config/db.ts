@@ -7,7 +7,10 @@ const connectDB = async (listen: () => void): Promise<void> => {
 			process.env.NODE_ENV === 'test'
 				? process.env.MONGO_URI_TEST!
 				: process.env.MONGO_URI!;
-		const conn = await mongoose.connect(connectionUri);
+		const conn = await mongoose.connect(connectionUri, {
+			user: process.env.MONGO_USERNAME,
+			pass: process.env.MONGO_PASSWORD,
+		});
 		console.log(
 			colors.cyan.underline(`MongoDB Connected: ${conn.connection.host}`)
 		);
