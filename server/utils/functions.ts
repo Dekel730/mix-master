@@ -1,4 +1,4 @@
-import { createTransport } from 'nodemailer';
+import axios from 'axios';
 import fs from 'fs';
 
 export const sendEmail = async (
@@ -7,32 +7,31 @@ export const sendEmail = async (
 	text: string,
 	html?: string
 ): Promise<boolean> => {
-	var transporter = createTransport({
-		service: process.env.EMAIL_SERVICE,
-		auth: {
-			user: process.env.EMAIL_USERNAME,
-			pass: process.env.EMAIL_PASSWORD,
-		},
-	});
+	let result = false;
+	try {
+		const response = await axios.post(
+			process.env.EMAIL_API_URL!,
+			{
+				receiver,
+				subject,
+				text,
+				html,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${process.env.EMAIL_API_KEY}`,
+				},
+			}
+		);
+		if (response.data.success) {
+			result = true;
+		}
+	} catch (error) {
+		console.log(error);
+		result = false;
+	}
 
-	var mailOptions = {
-		from: process.env.EMAIL_ADDRESS,
-		to: receiver,
-		subject: subject,
-		text: text,
-		html: html,
-	};
-	let success = false;
-	await transporter
-		.sendMail(mailOptions)
-		.then(() => {
-			success = true;
-		})
-		.catch((err) => {
-			console.log(err);
-			success = false;
-		});
-	return success;
+	return result;
 };
 
 export const isValidURL = (string: string): boolean => {
