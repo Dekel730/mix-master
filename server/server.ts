@@ -47,14 +47,6 @@ connectDB(() => {
 	}
 });
 
-if (process.env.NODE_ENV === 'production') {
-	app.use(express.static(path.join(__dirname, '../client')));
-
-	app.get('*', (req, res) => {
-		res.sendFile(path.join(__dirname, '../client', 'index.html'));
-	});
-}
-
 app.use(
 	cors({
 		origin: process.env.HOST_ADDRESS,
@@ -78,6 +70,14 @@ app.use('/api/user', userRoutes);
 app.use('/api/post', postRoutes);
 app.use('/api/comment', commentRoutes);
 app.use('/api/cocktail', cocktailRoutes);
+
+if (process.env.NODE_ENV === 'production') {
+	app.use(express.static(path.join(__dirname, '../client')));
+
+	app.get('*', (req, res) => {
+		res.sendFile(path.join(__dirname, '../client', 'index.html'));
+	});
+}
 
 app.use(errorHandler);
 
