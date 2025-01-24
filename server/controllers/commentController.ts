@@ -35,6 +35,10 @@ export const createComment = asyncHandler(
 				res.status(404);
 				throw new Error('Parent comment not found');
 			}
+			if (parentCommentDocument.parentComment) {
+				res.status(400);
+				throw new Error('Nested comments are not allowed');
+			}
 		}
 
 		const newComment = await Comment.create({
@@ -146,40 +150,6 @@ export const getRepliesByComment = asyncHandler(
 	}
 );
 
-// UpdateComment
-export const updateComment = asyncHandler(
-	async (req: Request, res: Response, next: NextFunction) => {
-		const user = req.user!;
-		const { content }: { content: string } = req.body;
-		const commentId = req.params.commentId;
-
-		if (!content) {
-			res.status(400);
-			throw new Error('Please fill all required fields');
-		}
-
-		const comment = await Comment.findById(commentId);
-
-		if (!comment) {
-			res.status(404);
-			throw new Error('Comment not found');
-		}
-
-		if (comment.user.toString() !== user.id) {
-			res.status(401);
-			throw new Error('You are not authorized to update this comment');
-		}
-
-		comment.content = content;
-		await comment.save();
-
-		res.status(200).json({
-			success: true,
-			comment,
-		});
-	}
-);
-
 //LikeComment
 export const likeComment = asyncHandler(
 	async (req: Request, res: Response, next: NextFunction) => {
@@ -230,7 +200,15 @@ export const deleteComment = asyncHandler(
 			throw new Error('You are not authorized to update this comment');
 		}
 
-		await Comment.findByIdAndDelete(commentId);
+		let promises: Promise<any>[] = [];
+
+		for (let reply of comment.replies) {
+			promises.push(Comment.findByIdAndDelete(reply));
+		}
+
+		promises.push(Comment.findByIdAndDelete(commentId));
+
+		await Promise.all(promises);
 
 		res.status(200).json({
 			success: true,

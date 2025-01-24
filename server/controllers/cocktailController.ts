@@ -96,6 +96,7 @@ const getCocktailById = asyncHandler(async (req, res) => {
 			cocktail,
 		});
 	} catch (error) {
+		res.status(404);
 		throw new Error('Cocktail not found');
 	}
 });

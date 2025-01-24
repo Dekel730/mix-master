@@ -5,13 +5,17 @@ import { getUserId } from '../controllers/userController';
 import jwt from 'jsonwebtoken';
 import { MAX_BIO_LENGTH } from '../utils/consts';
 import { Device } from '../models/userModel';
+import { v4 as uuid4 } from 'uuid';
 
 process.env.NODE_ENV = 'test';
 
 var accessToken2: string,
 	refreshToken: string,
 	newUserId: string,
-	invalidUserToken: string;
+	invalidUserToken: string,
+	invalidUniqueToken: string,
+	invalidDeviceToken: string,
+	resetToken: string;
 
 const user = {
 	f_name: 'John',
@@ -84,6 +88,17 @@ describe('User routes Test', () => {
 			.field('email', process.env.TEST_EMAIL_USER_1!)
 			.field('password', user.password)
 			.attach('picture', './tests/assets/test.jpeg');
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if gender invalid  - register', async () => {
+		const res = await request(app)
+			.post('/api/user/register')
+			.field('f_name', user.f_name)
+			.field('l_name', user.l_name)
+			.field('email', user.email)
+			.field('gender', 'invalidGender')
+			.field('password', user.password);
 		expect(res.statusCode).toEqual(400);
 	});
 
@@ -192,6 +207,14 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(200);
 		accessToken2 = res.body.accessToken;
 		refreshToken = res.body.refreshToken;
+		invalidUniqueToken = jwt.sign(
+			{ id: res.body.user._id, device: device.id, unique: '' },
+			process.env.JWT_SECRET_REFRESH!
+		);
+		invalidDeviceToken = jwt.sign(
+			{ id: res.body.user._id, device: 'invalidDevice' },
+			process.env.JWT_SECRET_REFRESH!
+		);
 	});
 
 	it('should return 400 if user was trying to follow himself - follow user', async () => {
@@ -304,6 +327,17 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(400);
 	});
 
+	it('should return 400 if gender invalid  - update user', async () => {
+		const res = await request(app)
+			.put('/api/user')
+			.set('Authorization', `Bearer ${accessToken2}`)
+			.field('f_name', 'John')
+			.field('l_name', 'Smith')
+			.field('gender', 'invalidGender')
+			.attach('picture', './tests/assets/test.jpeg');
+		expect(res.statusCode).toEqual(400);
+	});
+
 	it('should return 200 if user updated and deleted picture  - update user', async () => {
 		const res = await request(app)
 			.put('/api/user')
@@ -329,14 +363,14 @@ describe('User routes Test', () => {
 		expect(res.body.user.l_name).toEqual('Smith');
 	});
 
-	it('should return 400 if no refresh token is provided', async () => {
+	it('should return 400 if no refresh token is provided - refresh', async () => {
 		const res = await request(app).post('/api/user/refresh').send();
 
 		expect(res.statusCode).toEqual(400);
 		expect(res.body.message).toBe('No refresh token provided.');
 	});
 
-	it('should return 400 if the refresh token is invalid', async () => {
+	it('should return 400 if the refresh token is invalid - refresh', async () => {
 		const invalidRefreshToken = 'invalidtoken123';
 
 		const res = await request(app)
@@ -347,7 +381,7 @@ describe('User routes Test', () => {
 		expect(res.body.message).toBe('Token failed');
 	});
 
-	it('should return 404 if user not found', async () => {
+	it('should return 404 if user not found - refresh', async () => {
 		const res = await request(app)
 			.post('/api/user/refresh')
 			.set('Authorization', `Bearer ${invalidUserToken}`);
@@ -355,7 +389,22 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(404);
 	});
 
+	it('should return 401 if refresh token invalid - refresh', async () => {
+		const res = await request(app)
+			.post('/api/user/refresh')
+			.set('Authorization', `Bearer ${invalidDeviceToken}`);
+
+		expect(res.statusCode).toEqual(401);
+	});
+
 	it('should return access token if valid refresh token is provided - refresh', async () => {
+		const res1 = await request(app).post('/api/user/login').send({
+			email: user.email,
+			password: user.password,
+			device,
+		});
+		accessToken2 = res1.body.accessToken;
+		refreshToken = res1.body.refreshToken;
 		const res = await request(app)
 			.post('/api/user/refresh')
 			.set('Authorization', `Bearer ${refreshToken}`)
@@ -367,12 +416,11 @@ describe('User routes Test', () => {
 		expect(res.body).toHaveProperty('refreshToken');
 	});
 
-	it('should return 401 if refresh token expired', async () => {
+	it('should return 401 if refresh token expired - refresh', async () => {
 		const res = await request(app)
 			.post('/api/user/refresh')
 			.set('Authorization', `Bearer ${refreshToken}`)
 			.send({});
-
 		expect(res.statusCode).toEqual(401);
 	});
 
@@ -481,6 +529,19 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(401);
 	});
 
+	it('should return 404 if token invalid - logout', async () => {
+		const res1 = await request(app).post('/api/user/login').send({
+			email: user.email,
+			password: user.password,
+			device,
+		});
+		const res = await request(app)
+			.post('/api/user/logout')
+			.set('authorization', `Bearer ${invalidUniqueToken}`)
+			.send({});
+		expect(res.statusCode).toEqual(401);
+	});
+
 	it('should return 200 if logged out - logout', async () => {
 		const res1 = await request(app).post('/api/user/login').send({
 			email: user.email,
@@ -495,8 +556,118 @@ describe('User routes Test', () => {
 		expect(res.statusCode).toEqual(200);
 	});
 
+	it('should return 400 if no reset token - reset password', async () => {
+		const res = await request(app)
+			.post(`/api/user/forgot/password/${'invalidToken'}/${user.email}`)
+			.send({
+				password: 'Password1234',
+			});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if invalid email - forgot password', async () => {
+		const res = await request(app).post('/api/user/forgot/email').send({
+			email: '',
+		});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 404 if user not found - forgot password', async () => {
+		const res = await request(app).post('/api/user/forgot/email').send({
+			email: 'invalid@example.com',
+		});
+		expect(res.statusCode).toEqual(404);
+	});
+
+	it('should return 200 if email sent - forgot password', async () => {
+		const res = await request(app).post('/api/user/forgot/email').send({
+			email: user.email,
+		});
+		expect(res.statusCode).toEqual(200);
+		expect(res.body.sent).toEqual(true);
+		resetToken = res.body.token;
+	});
+
+	it('should return 400 if invalid email - reset password', async () => {
+		const res = await request(app)
+			.post(`/api/user/forgot/password/${'invalidToken'}/1124`)
+			.send({});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if no password provided - reset password', async () => {
+		const res = await request(app)
+			.post(`/api/user/forgot/password/${'invalidToken'}/${user.email}`)
+			.send({});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if user not found - reset password', async () => {
+		const res = await request(app)
+			.post(
+				`/api/user/forgot/password/${'invalidToken'}/invalid@example.com`
+			)
+			.send({
+				password: 'Password1234',
+			});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 400 if wrong token - reset password', async () => {
+		const res = await request(app)
+			.post(`/api/user/forgot/password/${'invalidToken'}/${user.email}`)
+			.send({
+				password: 'Password1234',
+			});
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 200 if password was reset - reset password', async () => {
+		const res = await request(app)
+			.post(`/api/user/forgot/password/${resetToken}/${user.email}`)
+			.send({
+				password: 'Password1234',
+			});
+		expect(res.statusCode).toEqual(200);
+	});
+
+	it('should not return user id - get user id (internal)', async () => {
+		const id = await getUserId('invalid@example.com');
+		expect(id).toEqual('');
+	});
+
 	it('should delete user - deleteUser', async () => {
 		// TODO: add post to delete all posts
+		const res1 = await request(app)
+			.post('/api/post')
+			.set('Authorization', `Bearer ${accessToken2}`)
+			.field('title', 'Test Title')
+			.field('instructions', JSON.stringify(['Step 1', 'Step 2']))
+			.field(
+				'ingredients',
+				JSON.stringify([{ name: 'Test Ingredient', amount: '1 cup' }])
+			)
+			.attach('images', './tests/assets/test.jpeg');
+		const postId = res1.body.post._id;
+
+		const res2 = await request(app)
+			.post('/api/comment')
+			.set('Authorization', `Bearer ${accessToken2}`)
+			.send({
+				content: 'Test Comment',
+				postId,
+			});
+		const commentId = res2.body.comment._id;
+
+		const res3 = await request(app)
+			.post('/api/comment')
+			.set('Authorization', `Bearer ${accessToken2}`)
+			.send({
+				content: 'Test Reply',
+				postId,
+				parentComment: commentId,
+			});
+
 		const res = await request(app)
 			.delete('/api/user')
 			.set('Authorization', `Bearer ${accessToken2}`);

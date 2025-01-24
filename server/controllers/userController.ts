@@ -41,8 +41,9 @@ const createUserLogin = async (
 	const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
 		expiresIn: '1h',
 	});
+	const unique = uuid();
 	const refreshToken = jwt.sign(
-		{ id: user.id, device: device.id },
+		{ id: user.id, device: device.id, unique },
 		process.env.JWT_SECRET_REFRESH!
 	);
 	const hashedToken = await bcrypt.hash(refreshToken, 10);
@@ -55,6 +56,7 @@ const createUserLogin = async (
 			name: token.name,
 			createdAt: token.createdAt,
 			token: hashedToken,
+			unique,
 		};
 	} else {
 		user.tokens.push({
@@ -63,6 +65,7 @@ const createUserLogin = async (
 			createdAt: new Date(),
 			name: device.name,
 			type: device.type,
+			unique,
 		});
 	}
 	await user.save();
@@ -477,12 +480,13 @@ const refresh = asyncHandler(async (req, res) => {
 	}
 	const device = user.tokens.find((t) => t.device_id === decoded.device);
 	if (!device) {
-		user.tokens = [];
-		await user.save();
 		res.status(401);
 		throw new Error('Invalid refresh token');
 	}
-	if (!bcrypt.compareSync(refreshToken, device.token)) {
+	if (
+		!bcrypt.compareSync(refreshToken, device.token) ||
+		device.unique !== decoded.unique
+	) {
 		user.tokens = [];
 		await user.save();
 		res.status(401);
@@ -494,8 +498,10 @@ const refresh = asyncHandler(async (req, res) => {
 		{ expiresIn: '1h' }
 	);
 
+	const unique = uuid();
+
 	const newRefreshToken: string = jwt.sign(
-		{ id: decoded.id },
+		{ id: decoded.id, device: device.device_id, unique },
 		process.env.JWT_SECRET_REFRESH!
 	);
 
@@ -509,6 +515,7 @@ const refresh = asyncHandler(async (req, res) => {
 		name: device.name,
 		createdAt: device.createdAt,
 		token: newHashedToken,
+		unique,
 	};
 	await user.save();
 
@@ -544,12 +551,13 @@ const logout = asyncHandler(
 		}
 		const device = user.tokens.find((t) => t.device_id === decoded.device);
 		if (!device) {
-			user.tokens = [];
-			await user.save();
 			res.status(401);
 			throw new Error('Invalid token');
 		}
-		if (!bcrypt.compareSync(refreshToken, device.token)) {
+		if (
+			!bcrypt.compareSync(refreshToken, device.token) ||
+			device.unique !== decoded.unique
+		) {
 			user.tokens = [];
 			await user.save();
 			res.status(401);
@@ -742,7 +750,7 @@ const sendEmailPasswordReset = asyncHandler(
 			email: { $regex: new RegExp(`^${email}$`, 'i') },
 		});
 		if (!user) {
-			res.status(400);
+			res.status(404);
 			throw new Error('User not found');
 		}
 		const token = uuid();
@@ -766,7 +774,7 @@ const sendEmailPasswordReset = asyncHandler(
 			</div>
 		`;
 
-		const sent = sendEmail(
+		const sent = await sendEmail(
 			email,
 			'Reset your password - Mix Master',
 			`Reset your password: ${process.env.HOST_ADDRESS}/forgot/password/${token}/${email}`,
@@ -776,6 +784,7 @@ const sendEmailPasswordReset = asyncHandler(
 		res.json({
 			success: true,
 			sent,
+			token: process.env.NODE_ENV === 'test' ? token : undefined,
 		});
 	}
 );
@@ -787,10 +796,6 @@ const resetPassword = asyncHandler(
 		if (!email_regex.test(email)) {
 			res.status(400);
 			throw new Error('Invalid email');
-		}
-		if (!token) {
-			res.status(400);
-			throw new Error('Invalid token');
 		}
 		if (!password_regex.test(password)) {
 			res.status(400);
@@ -816,6 +821,7 @@ const resetPassword = asyncHandler(
 		const hashedPassword = await bcrypt.hash(password, salt);
 		user.password = hashedPassword;
 		user.resetPasswordToken = '';
+		user.resetPasswordTokenExpiry = null;
 		await user.save();
 		res.json({
 			success: true,

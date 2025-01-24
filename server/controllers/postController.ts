@@ -9,6 +9,7 @@ import {
 } from '../utils/consts';
 import { deleteFileFromPath } from '../utils/functions';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { deletePostComments } from './commentController';
 
 interface PostWithCounts extends IPost {
 	likeCount: number;
@@ -17,7 +18,15 @@ interface PostWithCounts extends IPost {
 
 const deleteUserPosts = async (userId: string): Promise<PostDocument[]> => {
 	const posts = await Post.find({ user: userId });
-	await Post.deleteMany({ user: userId });
+	let promises: Promise<any>[] = [];
+	posts.forEach((post) => {
+		post.images.forEach((img: string) => {
+			promises.push(deleteFileFromPath(img));
+		});
+		promises.push(deletePostComments(post._id.toString()));
+	});
+	promises.push(Post.deleteMany({ user: userId }));
+	await Promise.all(promises);
 	return posts;
 };
 
@@ -29,13 +38,40 @@ const postsWithCounts = (posts: PostDocument[]): PostWithCounts[] => {
 	}));
 };
 
-const checkRequired = (
+const checkRequiredAfterParsing = (
+	title: string | undefined,
+	ingredients: Ingredient[],
+	instructions: string[],
+	res: Response
+) => {
+	if (!title) {
+		res.status(400);
+		throw new Error('Please fill all required fields');
+	}
+	if (!ingredients.length || !instructions.length) {
+		res.status(400);
+		throw new Error(
+			'Instructions and ingredients must have at least one item'
+		);
+	}
+
+	if (!ingredients.every((ingredient: Ingredient) => ingredient.name)) {
+		res.status(400);
+		throw new Error('Ingredients must have name');
+	}
+
+	if (!instructions.every((instruction: string) => instruction)) {
+		res.status(400);
+		throw new Error('Instructions must have content');
+	}
+};
+const checkRequiredBeforeParsing = (
 	title: string | undefined,
 	ingredients: string | undefined,
 	instructions: string | undefined,
 	res: Response
 ) => {
-	if (!title || !ingredients || !instructions) {
+	if (!ingredients || !instructions) {
 		res.status(400);
 		throw new Error('Please fill all required fields');
 	}
@@ -43,24 +79,12 @@ const checkRequired = (
 	const ingredients_object: Ingredient[] = JSON.parse(ingredients);
 	const instructions_object: string[] = JSON.parse(instructions);
 
-	if (!ingredients_object.length || !instructions_object.length) {
-		res.status(400);
-		throw new Error(
-			'Instructions and ingredients must have at least one item'
-		);
-	}
-
-	if (
-		!ingredients_object.every((ingredient: Ingredient) => ingredient.name)
-	) {
-		res.status(400);
-		throw new Error('Ingredients must have name');
-	}
-
-	if (!instructions_object.every((instruction: string) => instruction)) {
-		res.status(400);
-		throw new Error('Instructions must have content');
-	}
+	checkRequiredAfterParsing(
+		title,
+		ingredients_object,
+		instructions_object,
+		res
+	);
 
 	return { ingredients_object, instructions_object };
 };
@@ -88,12 +112,8 @@ export const createPost = asyncHandler(
 			);
 		}
 
-		const { ingredients_object, instructions_object } = checkRequired(
-			title,
-			ingredients,
-			instructions,
-			res
-		);
+		const { ingredients_object, instructions_object } =
+			checkRequiredBeforeParsing(title, ingredients, instructions, res);
 
 		const user = req.user!;
 		const userId = user._id;
@@ -208,42 +228,19 @@ export const createWithAI = asyncHandler(
 			', '
 		)} in ${language} language in JSON format`;
 		const result = await model.generateContent(prompt);
-		if (!ingredients) {
-			ingredients_object = [];
-		}
 		const resultJSON: IPost = JSON.parse(result.response.text());
 
 		// check if the result is valid
-		// check if the result is valid
-
-		if (
-			!resultJSON.title ||
-			!resultJSON.ingredients ||
-			!resultJSON.instructions
-		) {
-			res.status(400);
-			throw new Error('Failed to generate cocktail1');
-		}
-
-		if (!resultJSON.ingredients.length || !resultJSON.instructions.length) {
-			res.status(400);
-			throw new Error('Failed to generate cocktail2');
-		}
-
-		if (
-			!resultJSON.ingredients.every(
-				(ingredient: Ingredient) => ingredient.name
-			)
-		) {
-			res.status(400);
-			throw new Error('Failed to generate cocktail3');
-		}
-
-		if (
-			!resultJSON.instructions.every((instruction: string) => instruction)
-		) {
-			res.status(400);
-			throw new Error('Failed to generate cocktail4');
+		try {
+			checkRequiredAfterParsing(
+				resultJSON.title,
+				resultJSON.ingredients,
+				resultJSON.instructions,
+				res
+			);
+		} catch (error) {
+			res.status(500);
+			throw new Error('Failed to generate cocktail');
 		}
 
 		res.status(200).json({
@@ -300,12 +297,18 @@ export const deletePost = asyncHandler(
 			throw new Error('You are not authorized to delete this post');
 		}
 
-		await Post.findByIdAndDelete(postId);
+		let promises: Promise<any>[] = [];
 
-		res.status(200).json({
-			success: true,
-			message: 'post deleted successfully',
+		post.images.forEach((img: string) => {
+			promises.push(deleteFileFromPath(img));
 		});
+
+		promises.push(Post.findByIdAndDelete(postId));
+
+		promises.push(deletePostComments(postId));
+
+		await Promise.all(promises);
+
 		res.status(200).json({
 			success: true,
 			message: 'post deleted successfully',
@@ -322,7 +325,7 @@ export const updatePost = asyncHandler(
 			description,
 			ingredients,
 			instructions,
-			deletedImages
+			deletedImages,
 		}: {
 			title: string;
 			description: string;
@@ -342,12 +345,8 @@ export const updatePost = asyncHandler(
 			deletedImagesArr = JSON.parse(deletedImages);
 		}
 
-		const { ingredients_object, instructions_object } = checkRequired(
-			title,
-			ingredients,
-			instructions,
-			res
-		);
+		const { ingredients_object, instructions_object } =
+			checkRequiredBeforeParsing(title, ingredients, instructions, res);
 
 		const post = await Post.findById(postId);
 
@@ -366,7 +365,9 @@ export const updatePost = asyncHandler(
 		post.ingredients = ingredients_object;
 		post.instructions = instructions_object;
 		post.images = [...post.images, ...images];
-		post.images = post.images.filter((img) => !deletedImagesArr.includes(img));
+		post.images = post.images.filter(
+			(img) => !deletedImagesArr.includes(img)
+		);
 
 		let promises: Promise<boolean>[] = [];
 		deletedImagesArr.forEach((img: string) => {
@@ -449,6 +450,11 @@ export const searchPosts = asyncHandler(
 
 		const pageNumber = page ? Number(page) : 1;
 
+		if (queryS.trim().length === 0) {
+			res.status(400);
+			throw new Error('Query parameter is required');
+		}
+
 		const count: number = await Post.find({
 			$or: [
 				{ title: { $regex: queryS, $options: 'i' } },
@@ -457,11 +463,6 @@ export const searchPosts = asyncHandler(
 				{ instructions: { $regex: queryS, $options: 'i' } },
 			],
 		}).countDocuments();
-
-		if (queryS.trim().length === 0) {
-			res.status(400);
-			throw new Error('Query parameter is required');
-		}
 
 		const searchResult = await Post.find({
 			$or: [
