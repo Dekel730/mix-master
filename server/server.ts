@@ -15,6 +15,7 @@ import cors from 'cors';
 import fs from 'fs';
 import http from 'http';
 import https from 'https';
+import path from 'path';
 
 dotenv.config();
 
@@ -45,6 +46,14 @@ connectDB(() => {
 		}
 	}
 });
+
+if (process.env.NODE_ENV === 'production') {
+	app.use(express.static(path.join(__dirname, '../client/dist')));
+
+	app.get('*', (req, res) => {
+		res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+	});
+}
 
 app.use(
 	cors({
