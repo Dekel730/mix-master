@@ -157,6 +157,6 @@ const UserScheme = new mongoose.Schema<IUser>(
 
 UserScheme.index({ resetPasswordTokenExpiry: 1 }, { expireAfterSeconds: 0 });
 
-export default mongoose.model<IUser>('User', UserScheme);
+export default mongoose.model<IUser>('User', UserScheme, 'app_users');
 
 export interface UserDocument extends IUser, mongoose.Document {}
