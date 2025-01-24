@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import './Loader.css';
+import '../Loader.css';
 import $ from 'jquery';
 
 const Loader = () => {

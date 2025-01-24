@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import './ThanosSnap.css';
+import '../ThanosSnap.css';
 
 interface ThanosSnapProps {
 	isDisintegrating: boolean;
