@@ -72,10 +72,10 @@ app.use('/api/comment', commentRoutes);
 app.use('/api/cocktail', cocktailRoutes);
 
 if (process.env.NODE_ENV === 'production') {
-	app.use(express.static(path.join(__dirname, '../client')));
+	app.use(express.static(path.join(__dirname, '../../client/dist')));
 
 	app.get('*', (req, res) => {
-		res.sendFile(path.join(__dirname, '../client', 'index.html'));
+		res.sendFile(path.join(__dirname, '../../client/dist', 'index.html'));
 	});
 }
 
