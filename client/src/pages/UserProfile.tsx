@@ -134,6 +134,7 @@ const UserProfile = () => {
 	useEffect(() => {
 		if (id !== userId.current) {
 			userId.current = id!;
+			setCocktailsData(defaultCocktailsData);
 			getData();
 		}
 	}, [id]);

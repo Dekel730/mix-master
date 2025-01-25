@@ -5,6 +5,7 @@
 	"scripts": {
 		"test": "jest --detectOpenHandles --forceExit",
 		"test:coverage": "jest --detectOpenHandles --forceExit --coverage",
+		"prod": "cp .env.production.local .env && tsc -p tsconfig_prod.json && pm2 restart ecosystem.config.js --env production",
 		"dev": "nodemon server.ts",
 		"build": "rimraf dist && tsc",
 		"start": "ts-node server.ts"

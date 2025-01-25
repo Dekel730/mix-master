@@ -12,10 +12,15 @@ import commentRoutes from './routes/commentRoutes';
 import cocktailRoutes from './routes/cocktailRoutes';
 import './types/types';
 import cors from 'cors';
+import fs from 'fs';
+import http from 'http';
+import https from 'https';
+import path from 'path';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 443;
 
 const app: Express = express();
 
@@ -26,9 +31,19 @@ app.use(mongoSanitize());
 
 connectDB(() => {
 	if (process.env.NODE_ENV !== 'test') {
-		app.listen(PORT, () => {
-			console.log(`server is running on port ${PORT}`);
-		});
+		if (process.env.NODE_ENV !== 'production') {
+			http.createServer(app).listen(PORT, () => {
+				console.log(`server is running on port ${PORT}`);
+			});
+		} else {
+			const options = {
+				key: fs.readFileSync('./client-key.pem'),
+				cert: fs.readFileSync('./client-cert.pem'),
+			};
+			https.createServer(options, app).listen(HTTPS_PORT, () => {
+				console.log(`server is running on port ${HTTPS_PORT}`);
+			});
+		}
 	}
 });
 
@@ -55,6 +70,14 @@ app.use('/api/user', userRoutes);
 app.use('/api/post', postRoutes);
 app.use('/api/comment', commentRoutes);
 app.use('/api/cocktail', cocktailRoutes);
+
+if (process.env.NODE_ENV === 'production') {
+	app.use(express.static(path.join(__dirname, '../../client/dist')));
+
+	app.get('*', (req, res) => {
+		res.sendFile(path.join(__dirname, '../../client/dist', 'index.html'));
+	});
+}
 
 app.use(errorHandler);
 

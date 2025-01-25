@@ -109,8 +109,15 @@ export default function EditCocktail() {
 
 	useEffect(() => {
 		if (id !== hasRunId.current) {
-			getCocktail();
 			hasRunId.current = id;
+			setUploadedImages([]);
+			setDeletedImages([]);
+			setPreviewImage(null);
+			setValue('title', '');
+			setValue('description', '');
+			setValue('ingredients', [{ name: '', amount: '' }]);
+			setValue('instructions', [{ name: '' }]);
+			getCocktail();
 		}
 	}, [id]);
 

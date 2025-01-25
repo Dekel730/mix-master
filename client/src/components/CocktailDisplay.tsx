@@ -98,28 +98,31 @@ const CocktailDisplay = ({
 						{cocktail.title}
 					</h1>
 				</Link>
-				<p className="text-sm text-gray-200">By {cocktail.description}</p>
-				{cocktail.images.length > 1 && 
-				<Carousel
-					showThumbs={false}
-					showStatus={false}
-					infiniteLoop={true}
-					emulateTouch={true}
-					swipeable={true}
-					dynamicHeight={true}
-				>
-					{cocktail.images.map((image: string, index: number) => (
-						<div key={index}>
-							<img
-								src={`${
-									import.meta.env.VITE_API_ADDRESS
-								}/${image}`}
-								alt={`${cocktail.title} - Image ${index + 1}`}
-								className="w-full object-contain max-h-[600px]"
-							/>
-						</div>
-					))}
-				</Carousel>}
+				<p className="text-sm text-gray-200">{cocktail.description}</p>
+				{cocktail.images.length > 0 && (
+					<Carousel
+						showThumbs={false}
+						showStatus={false}
+						infiniteLoop={true}
+						emulateTouch={true}
+						swipeable={true}
+						dynamicHeight={true}
+					>
+						{cocktail.images.map((image: string, index: number) => (
+							<div key={index}>
+								<img
+									src={`${
+										import.meta.env.VITE_API_ADDRESS
+									}/${image}`}
+									alt={`${cocktail.title} - Image ${
+										index + 1
+									}`}
+									className="w-full object-contain max-h-[600px]"
+								/>
+							</div>
+						))}
+					</Carousel>
+				)}
 
 				<div className="flex items-center space-x-4">
 					<LikeButton

@@ -375,6 +375,7 @@ const CocktailDisplay: React.FC = () => {
 		if (id !== postId.current) {
 			postId.current = id!;
 			if (id) {
+				setCocktail(cocktailDefault);
 				getData();
 			} else {
 				toast.error('Invalid cocktail ID.');

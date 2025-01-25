@@ -47,9 +47,11 @@ const Loader = () => {
 	}, [loaded]);
 
 	useEffect(() => {
-		if (!hasRun.current) {
-			hasRun.current = true;
-			return;
+		if (import.meta.env.VITE_ENV === 'development') {
+			if (!hasRun.current) {
+				hasRun.current = true;
+				return;
+			}
 		}
 		startLoading();
 
