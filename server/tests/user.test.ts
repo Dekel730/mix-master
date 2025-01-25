@@ -5,7 +5,6 @@ import { getUserId } from '../controllers/userController';
 import jwt from 'jsonwebtoken';
 import { MAX_BIO_LENGTH } from '../utils/consts';
 import { Device } from '../models/userModel';
-import { v4 as uuid4 } from 'uuid';
 
 process.env.NODE_ENV = 'test';
 
@@ -629,6 +628,25 @@ describe('User routes Test', () => {
 				password: 'Password1234',
 			});
 		expect(res.statusCode).toEqual(200);
+	});
+
+	it('should return 400 if no query - search users', async () => {
+		const res = await request(app)
+			.get(`/api/user/search/`)
+			.set('Authorization', `Bearer ${global.TestAccessToken}`);
+
+		expect(res.statusCode).toEqual(400);
+	});
+
+	it('should return 200 if searched - search users', async () => {
+		const res = await request(app)
+			.get(`/api/user/search/?query=gin`)
+			.set('Authorization', `Bearer ${global.TestAccessToken}`);
+
+		expect(res.statusCode).toEqual(200);
+		expect(res.body).toHaveProperty('users');
+		expect(res.body.users).toBeInstanceOf(Array);
+		expect(res.body.count).toBeGreaterThanOrEqual(0);
 	});
 
 	it('should not return user id - get user id (internal)', async () => {

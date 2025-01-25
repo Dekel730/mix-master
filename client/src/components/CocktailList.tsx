@@ -125,18 +125,26 @@ const CocktailList = ({
 				}}
 				className="md:col-span-2"
 			>
-				<div className="grid gap-4">
-					{cocktails.map((cocktail: ICocktail) => (
-						<div key={cocktail._id}>
-							<CocktailDisplay
-								loader={isDeleting === cocktail._id}
-								likeUnlike={likeUnlike}
-								cocktail={cocktail}
-								handleDeleteUser={setIsDeleteModalOpen}
-							/>
-						</div>
-					))}
-				</div>
+				{cocktails.length > 0 ? (
+					<div className="grid gap-4">
+						{cocktails.map((cocktail: ICocktail) => (
+							<div key={cocktail._id}>
+								<CocktailDisplay
+									loader={isDeleting === cocktail._id}
+									likeUnlike={likeUnlike}
+									cocktail={cocktail}
+									handleDeleteUser={setIsDeleteModalOpen}
+								/>
+							</div>
+						))}
+					</div>
+				) : (
+					<div>
+						<p className="text-center text-xl text-gray-300 mt-10">
+							No cocktails found
+						</p>
+					</div>
+				)}
 				{isLoading && (
 					<div className="flex justify-center w-full">
 						<Spinner width="w-24" height="h-24" />
