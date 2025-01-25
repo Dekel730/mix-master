@@ -42,6 +42,7 @@ const DrinkDetails = () => {
 	useEffect(() => {
 		if (id && id !== runId.current) {
 			runId.current = id;
+			setDrink(defaultDrink);
 			getDrink();
 		}
 	}, [id]);
