@@ -1,0 +1,12 @@
+{
+	"name": "mix-master",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"deploy": "git pull && cd server && npm run build && cd ../client && npm run build && pm2 restart 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": ""
+}
