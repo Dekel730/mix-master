@@ -99,7 +99,7 @@ const CocktailDisplay = ({
 					</h1>
 				</Link>
 				<p className="text-sm text-gray-200">By {cocktail.description}</p>
-				{cocktail.images.length > 1 && 
+				{cocktail.images.length > 0 && 
 				<Carousel
 					showThumbs={false}
 					showStatus={false}
