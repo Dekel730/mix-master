@@ -1,7 +1,6 @@
 import request from 'supertest';
 import app from '../server';
-import { beforeAll, describe, expect, it } from '@jest/globals';
-import CommentModel from '../models/commentModel';
+import { describe, expect, it } from '@jest/globals';
 
 process.env.NODE_ENV = 'test';
 
