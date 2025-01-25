@@ -18,7 +18,8 @@ import {
 	disconnectDevice,
 	changePassword,
 	resetPassword,
-	sendEmailPasswordReset
+	sendEmailPasswordReset,
+	searchUsers,
 } from '../controllers/userController';
 import upload from '../config/storage';
 
@@ -36,6 +37,7 @@ router.get('/follow/:id', authUser, followUser);
 router.get('/unfollow/:id', authUser, unFollowUser);
 router.get('/disconnect/:id', authUser, disconnectDevice);
 router.get('/disconnect', authUser, disconnectAllDevices);
+router.get('/search', authUser, searchUsers);
 router.get('/:id', authUser, getUser);
 router.put('/', authUser, upload.single('picture'), updateUser);
 router.post('/google', googleLogin);

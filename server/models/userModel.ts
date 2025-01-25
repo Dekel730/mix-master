@@ -64,6 +64,17 @@ export interface UserDisplay {
 	isFollowing: boolean;
 }
 
+export interface UserSearchResult {
+	f_name: string;
+	l_name: string;
+	picture?: string;
+	_id: string;
+	gender: 'Male' | 'Female' | 'Other';
+	createdAt: Date;
+	following: number;
+	followers: number;
+}
+
 export interface UserData {
 	f_name: string;
 	l_name: string;

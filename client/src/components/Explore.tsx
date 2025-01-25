@@ -7,15 +7,16 @@ import DrinkDisplay from './DrinkDisplay';
 import Spinner from './Spinner';
 import RedButton from './RedButton';
 import { RiRefreshFill } from 'react-icons/ri';
+import { HomeQuery } from '../types/home';
 
 interface ExploreProps {
 	drinks: IDrink[];
 	refresh: () => Promise<void>;
 	query?: string;
 	gettingData: boolean;
-	register: UseFormRegister<{ searchQuery: string; searchDrinks: string }>;
-	errors: FieldErrors<{ searchQuery: string; searchDrinks: string }>;
-	setValue: UseFormSetValue<{ searchQuery: string; searchDrinks: string }>;
+	register: UseFormRegister<HomeQuery>;
+	errors: FieldErrors<HomeQuery>;
+	setValue: UseFormSetValue<HomeQuery>;
 }
 const Explore = ({
 	drinks,
@@ -29,7 +30,7 @@ const Explore = ({
 		<div className="flex flex-col space-y-4">
 			<RedTitle title="Explore" />
 			<div className="flex w-full items-baseline gap-3">
-				<Input<{ searchQuery: string; searchDrinks: string }>
+				<Input<HomeQuery>
 					register={register}
 					field="searchDrinks"
 					placeholder="Search for a cocktail"

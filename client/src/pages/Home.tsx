@@ -14,6 +14,8 @@ import { IDrink } from '../types/drink';
 import { useAuth } from '../context/AuthContext';
 import { FaPlus } from 'react-icons/fa';
 import RedButton from '../components/RedButton';
+import SearchUsers from '../components/SearchUsers';
+import { UsersData, usersDataDefault } from '../types/user';
 
 const Home = () => {
 	const tabs = [
@@ -31,9 +33,15 @@ const Home = () => {
 		},
 		{
 			id: 'search',
-			label: 'Search',
+			label: 'Search Cocktails',
 			icon: FaSearch,
 			component: Search,
+		},
+		{
+			id: 'searchUser',
+			label: 'Search Users',
+			icon: FaSearch,
+			component: SearchUsers,
 		},
 	];
 
@@ -47,6 +55,7 @@ const Home = () => {
 	} = useForm<{
 		searchQuery: string;
 		searchDrinks: string;
+		searchUsers: string;
 	}>();
 	const hasRun = useRef(false);
 	const hasChanged = useRef(false);
@@ -55,18 +64,62 @@ const Home = () => {
 
 	const searchQuery = watch('searchQuery');
 	const searchDrinks = watch('searchDrinks');
+	const searchUsers = watch('searchUsers');
 
 	const TabContent =
 		tabs.find((tab) => tab.id === activeTab)?.component || Feed;
 
 	const [CocktailsData, setCocktailsData] =
 		useState<CocktailsData>(defaultCocktailsData);
+	const [usersData, setUsersData] = useState<UsersData>(usersDataDefault);
 	const [drinks, setDrinks] = useState<IDrink[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const navigate = useNavigate();
 
 	const handleClick = () => {
 		navigate('/cocktail/new/build');
+	};
+
+	const getUsers = async (
+		page?: number,
+		loading?: boolean
+	): Promise<boolean> => {
+		setGettingData(true);
+		page = page || 1;
+		if (loading) {
+			setIsLoading(true);
+		}
+		let result = false;
+		await authGet(
+			`/user/search/?query=${searchUsers}&page=${page}`,
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			(data) => {
+				if (page === 1) {
+					setUsersData({
+						users: data.users,
+						count: data.count,
+						pages: data.pages,
+					});
+				} else {
+					setUsersData((prev: UsersData) => ({
+						users: [...prev.users, ...data.users],
+						count: data.count,
+						pages: data.pages,
+					}));
+				}
+				result = true;
+			}
+		);
+		if (loading) {
+			setIsLoading(false);
+		}
+		setGettingData(false);
+		return result;
 	};
 
 	const getSearchedDrinks = async () => {
@@ -180,6 +233,19 @@ const Home = () => {
 		return result;
 	};
 
+	const getFetchMore = () => {
+		switch (activeTab) {
+			case 'feed':
+				return getFeedPosts;
+			case 'search':
+				return getSearchResults;
+			case 'searchUser':
+				return getUsers;
+			default:
+				return getFeedPosts;
+		}
+	};
+
 	useEffect(() => {
 		if (activeTab === 'explore') {
 			if (!searchDrinks) {
@@ -210,11 +276,17 @@ const Home = () => {
 				}
 			}
 		}
+		if (activeTab === 'searchUser') {
+			setUsersData(usersDataDefault);
+		}
 		if (activeTab === 'search') {
 			setCocktailsData(defaultCocktailsData);
 		}
 		if (activeTab !== 'search') {
 			setValue('searchQuery', '');
+		}
+		if (activeTab !== 'searchUser') {
+			setValue('searchUsers', '');
 		}
 	}, [activeTab]);
 
@@ -283,16 +355,14 @@ const Home = () => {
 							refresh={getRandomDrinks}
 							setCocktails={setCocktailsData}
 							cocktails={CocktailsData.cocktails}
-							fetchMore={
-								activeTab === 'search'
-									? getSearchResults
-									: getFeedPosts
-							}
+							fetchMore={getFetchMore()}
 							pages={CocktailsData.pages}
 							register={register}
+							users={usersData.users}
+							setUsers={setUsersData}
 							errors={errors}
 							setValue={setValue}
-							query={searchQuery}
+							query={activeTab === 'search' ? searchQuery : searchUsers}
 						/>
 					</div>
 				</div>

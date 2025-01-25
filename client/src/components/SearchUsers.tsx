@@ -1,15 +1,15 @@
-import { CocktailsData, ICocktail } from '../types/cocktail';
 import { FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import Input from './inputs/Input';
-import CocktailList from './CocktailList';
-import { FaSearch } from 'react-icons/fa';
 import RedTitle from './RedTitle';
 import { HomeQuery } from '../types/home';
+import { IUserSearch, UsersData } from '../types/user';
+import { FaSearch } from 'react-icons/fa';
+import UserList from './UserList';
 
-interface SearchProps {
-	cocktails: ICocktail[];
-	setCocktails: React.Dispatch<React.SetStateAction<CocktailsData>>;
-	fetchMore: (page: number) => Promise<boolean>;
+interface SearchUsersProps {
+	users: IUserSearch[];
+	setUsers: React.Dispatch<React.SetStateAction<UsersData>>;
+	fetchMore: (page?: number, loading?: boolean) => Promise<boolean>;
 	pages: number;
 	query?: string;
 	register: UseFormRegister<HomeQuery>;
@@ -17,34 +17,34 @@ interface SearchProps {
 	setValue: UseFormSetValue<HomeQuery>;
 }
 
-const Search = ({
-	cocktails,
+const SearchUsers = ({
+	users,
+	setUsers,
 	fetchMore,
 	pages,
-	setCocktails,
+	query,
 	register,
 	errors,
-	query,
 	setValue,
-}: SearchProps) => {
+}: SearchUsersProps) => {
 	return (
 		<div className="md:col-span-2">
-			<RedTitle title="Search Cocktails" />
+			<RedTitle title="Search Users" />
 			<Input<HomeQuery>
 				register={register}
-				field="searchQuery"
-				placeholder="Search for a cocktail"
+				field="searchUsers"
+				placeholder="Search for a user"
 				errors={errors}
 				StartIcon={FaSearch}
 				setValue={setValue}
 				debounce={true}
 			/>
 			<div className="mt-4">
-				<CocktailList
-					cocktails={cocktails}
+				<UserList
+					users={users}
 					fetchMore={fetchMore}
 					pages={pages}
-					setCocktails={setCocktails}
+					setUsers={setUsers}
 					query={query}
 				/>
 			</div>
@@ -52,4 +52,4 @@ const Search = ({
 	);
 };
 
-export default Search;
+export default SearchUsers;

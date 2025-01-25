@@ -7,6 +7,7 @@ import User, {
 	UserData,
 	UserDisplay,
 	UserDocument,
+	UserSearchResult,
 	UserSettings,
 } from '../models/userModel';
 import { email_regex, password_regex } from '../utils/regex';
@@ -18,7 +19,11 @@ import {
 import { deleteUserPosts } from './postController';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuid } from 'uuid';
-import { GENDER_OPTIONS, MAX_BIO_LENGTH } from '../utils/consts';
+import {
+	GENDER_OPTIONS,
+	MAX_BIO_LENGTH,
+	MAX_USERS_LIMIT,
+} from '../utils/consts';
 import { ObjectId } from 'mongoose';
 
 const getUserData = (user: UserDocument): UserData => ({
@@ -830,6 +835,61 @@ const resetPassword = asyncHandler(
 	}
 );
 
+const searchUsersMap = (user: UserDocument): UserSearchResult => ({
+	_id: user.id,
+	f_name: user.f_name,
+	l_name: user.l_name,
+	picture: user.picture,
+	gender: user.gender,
+	createdAt: user.createdAt!,
+	followers: user.followers.length,
+	following: user.following.length,
+});
+
+const searchUsers = asyncHandler(
+	async (req: Request, res: Response): Promise<void> => {
+		const { query, page } = req.query; // מילה או ביטוי לחיפוש
+
+		const queryS = query ? query.toString() : '';
+
+		const pageNumber = page ? Number(page) : 1;
+
+		if (queryS.trim().length === 0) {
+			res.status(400);
+			throw new Error('Query parameter is required');
+		}
+		const filter = {
+			$and: [
+				{ isVerified: true },
+				{
+					$or: [
+						{ f_name: { $regex: queryS, $options: 'i' } },
+						{ l_name: { $regex: queryS, $options: 'i' } },
+						{ description: { $regex: queryS, $options: 'i' } },
+					],
+				},
+			],
+		};
+
+		const count: number = await User.find(filter).countDocuments();
+
+		const searchResult = await User.find(filter)
+			.limit(MAX_USERS_LIMIT)
+			.skip(MAX_USERS_LIMIT * (pageNumber - 1));
+
+		const pages = Math.ceil(count / MAX_USERS_LIMIT);
+
+		const users = searchResult.map(searchUsersMap);
+
+		res.status(200).json({
+			success: true,
+			users,
+			count,
+			pages,
+		});
+	}
+);
+
 const getUserId = async (email: string): Promise<string> => {
 	const user = await User.findOne({
 		email: { $regex: new RegExp(`^${email}$`, 'i') },
@@ -860,4 +920,5 @@ export {
 	changePassword,
 	sendEmailPasswordReset,
 	resetPassword,
+	searchUsers,
 };
