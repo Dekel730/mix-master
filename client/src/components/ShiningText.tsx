@@ -1,4 +1,4 @@
-import '../ShiningText.css';
+import './ShiningText.css';
 
 interface ShiningTextProps {
 	text: string;
