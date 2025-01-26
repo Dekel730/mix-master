@@ -27,6 +27,7 @@ import IconMenu from '../components/IconMenu';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import ShiningText from '../components/ShiningText';
+import ImagePreview from '../components/ImagePreview';
 
 const CocktailDisplay: React.FC = () => {
 	const [cocktail, setCocktail] = useState<ICocktail>(cocktailDefault);
@@ -34,6 +35,7 @@ const CocktailDisplay: React.FC = () => {
 	const postId = useRef<string>('');
 	const [loadingComment, setLoadingComment] = useState<string>('');
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<string>('');
+	const [previewImage, setPreviewImage] = useState<string | null>(null);
 	const navigate = useNavigate();
 
 	const [commentsData, setCommentsData] =
@@ -395,11 +397,13 @@ const CocktailDisplay: React.FC = () => {
 						user={cocktail.user}
 						createdAt={cocktail.createdAt}
 					/>
-					<IconMenu
-						Icon={<FaEllipsisV className="h-4 w-4" />}
-						options={options}
-						buttonClassName="flex justify-center items-center w-9 h-9"
-					/>
+					{user._id === cocktail.user._id && (
+						<IconMenu
+							Icon={<FaEllipsisV className="h-4 w-4" />}
+							options={options}
+							buttonClassName="flex justify-center items-center w-9 h-9"
+						/>
+					)}
 				</div>
 				<Carousel
 					showThumbs={false}
@@ -408,6 +412,13 @@ const CocktailDisplay: React.FC = () => {
 					emulateTouch={true}
 					swipeable={true}
 					dynamicHeight={true}
+					onClickItem={(index) => {
+						setPreviewImage(
+							`${import.meta.env.VITE_API_ADDRESS}/${
+								cocktail.images[index]
+							}`
+						);
+					}}
 				>
 					{cocktail.images.map((image, index) => (
 						<div key={index} className="cursor-pointer">
@@ -516,6 +527,10 @@ const CocktailDisplay: React.FC = () => {
 				description="This action cannot be undone. This will permanently delete the cocktail and its comments and remove it from our servers."
 				confirmText="Delete Cocktail"
 				cancelText="Cancel"
+			/>
+			<ImagePreview
+				previewImageSrc={previewImage}
+				setPreviewImageSrc={setPreviewImage}
 			/>
 		</div>
 	);
