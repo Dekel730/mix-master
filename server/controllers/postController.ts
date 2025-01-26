@@ -360,6 +360,11 @@ export const updatePost = asyncHandler(
 			throw new Error('You are not authorized to update this post');
 		}
 
+		// Remove images that are not in the post
+		deletedImagesArr = deletedImagesArr.filter(
+			(img) => post.images.indexOf(img) !== -1
+		);
+
 		post.title = title;
 		post.description = description;
 		post.ingredients = ingredients_object;
