@@ -15,7 +15,7 @@ Mix Master is a full-stack social media application built with **React** and **E
 1. Register or log in using email/password or Google authentication.
 2. Browse featured cocktails from **CocktailsDB**.
 3. Create a custom cocktail recipe and share it.
-4. Like and comment on cocktails from other users.
+4. Like, comment and reply on cocktails from other users.
 5. Follow users to stay updated with their latest creations.
 6. Generate cocktail recipes using **Google Gemini AI**.
 
