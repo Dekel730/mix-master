@@ -11,51 +11,12 @@ const postPaths = {
 				content: {
 					'multipart/form-data': {
 						schema: {
-							type: 'object',
-							properties: {
-								title: {
-									type: 'string',
-									description: 'Title of the post',
-								},
-								description: {
-									type: 'string',
-									description: 'Description of the post',
-								},
-								images: {
-									type: 'array',
-									items: {
-										type: 'string',
-										format: 'uri',
-									},
-									description: 'Images for the post',
-								},
-								ingredients: {
-									type: 'array',
-									items: {
-										type: 'object',
-										properties: {
-											name: { type: 'string' },
-											amount: { type: 'string' },
-										},
-									},
-									description: 'Ingredients used in the post',
-								},
-								instructions: {
-									type: 'array',
-									items: { type: 'string' },
-									description: 'Instructions for the post',
-								},
-								ai: {
-									type: 'boolean',
-									description:
-										'Whether the post was created by AI',
-								},
-							},
-							required: ['title', 'ingredients', 'instructions'],
+							$ref: '#/components/schemas/Post',
 						},
 					},
 				},
 			},
+
 			responses: {
 				201: {
 					description: 'Post created successfully',
@@ -93,26 +54,7 @@ const postPaths = {
 				content: {
 					'application/json': {
 						schema: {
-							type: 'object',
-							properties: {
-								title: { type: 'string' },
-								description: { type: 'string' },
-								ingredients: {
-									type: 'array',
-									items: {
-										type: 'object',
-										properties: {
-											name: { type: 'string' },
-											amount: { type: 'string' },
-										},
-									},
-								},
-								instructions: {
-									type: 'array',
-									items: { type: 'string' },
-								},
-							},
-							required: ['title', 'ingredients', 'instructions'],
+							$ref: '#/components/schemas/Post',
 						},
 					},
 				},
@@ -156,32 +98,7 @@ const postPaths = {
 					content: {
 						'application/json': {
 							schema: {
-								type: 'array',
-								items: {
-									type: 'object',
-									properties: {
-										_id: {
-											type: 'string',
-											example: '612e5c5b1d8e1e001f4d9b5b',
-										},
-										title: {
-											type: 'string',
-											example: 'Delicious Recipe',
-										},
-										images: {
-											type: 'array',
-											items: { type: 'string' },
-											example: [
-												'https://image.com/post.jpg',
-											],
-										},
-										likes: { type: 'number', example: 12 },
-										comments: {
-											type: 'number',
-											example: 5,
-										},
-									},
-								},
+								$ref: '#/components/schemas/Post',
 							},
 						},
 					},
@@ -212,25 +129,7 @@ const postPaths = {
 					content: {
 						'application/json': {
 							schema: {
-								type: 'array',
-								items: {
-									type: 'object',
-									properties: {
-										_id: {
-											type: 'string',
-											example: '612e5c5b1d8e1e001f4d9b5b',
-										},
-										title: {
-											type: 'string',
-											example: 'Delicious Recipe',
-										},
-										likes: { type: 'number', example: 12 },
-										comments: {
-											type: 'number',
-											example: 5,
-										},
-									},
-								},
+								$ref: '#/components/schemas/Post',
 							},
 						},
 					},
@@ -261,21 +160,7 @@ const postPaths = {
 					content: {
 						'application/json': {
 							schema: {
-								type: 'object',
-								properties: {
-									_id: {
-										type: 'string',
-										example: '612e5c5b1d8e1e001f4d9b5b',
-									},
-									title: {
-										type: 'string',
-										example: 'Delicious Recipe',
-									},
-									description: {
-										type: 'string',
-										example: 'A tasty and easy recipe',
-									},
-								},
+								$ref: '#/components/schemas/Post',
 							},
 						},
 					},
@@ -371,3 +256,5 @@ const postPaths = {
 		},
 	},
 };
+
+export default postPaths;
