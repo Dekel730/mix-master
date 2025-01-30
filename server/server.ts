@@ -36,20 +36,20 @@ connectDB(() => {
 				console.log(`server is running on port ${PORT}`);
 			});
 		} else {
+			http.createServer((req, res) => {
+				res.writeHead(301, {
+					Location: 'https://' + req.headers.host + req.url,
+				});
+				res.end();
+			}).listen(80, () => {
+				console.log('Redirecting HTTP to HTTPS');
+			});
 			const options = {
 				key: fs.readFileSync('./client-key.pem'),
 				cert: fs.readFileSync('./client-cert.pem'),
 			};
 			https.createServer(options, app).listen(HTTPS_PORT, () => {
 				console.log(`server is running on port ${HTTPS_PORT}`);
-			});
-			app.use((req, res, next) => {
-				if (req.headers['x-forwarded-proto'] !== 'https') {
-					return res.redirect(
-						'https://' + req.headers.host + req.url
-					);
-				}
-				next();
 			});
 		}
 	}
