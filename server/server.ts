@@ -31,17 +31,24 @@ app.use(mongoSanitize());
 
 connectDB(() => {
 	if (process.env.NODE_ENV !== 'test') {
+		http.createServer(app).listen(PORT, () => {
+			console.log(`server is running on port ${PORT}`);
+		});
 		if (process.env.NODE_ENV !== 'production') {
-			http.createServer(app).listen(PORT, () => {
-				console.log(`server is running on port ${PORT}`);
-			});
-		} else {
 			const options = {
 				key: fs.readFileSync('./client-key.pem'),
 				cert: fs.readFileSync('./client-cert.pem'),
 			};
 			https.createServer(options, app).listen(HTTPS_PORT, () => {
 				console.log(`server is running on port ${HTTPS_PORT}`);
+			});
+			app.use((req, res, next) => {
+				if (req.headers['x-forwarded-proto'] !== 'https') {
+					return res.redirect(
+						'https://' + req.headers.host + req.url
+					);
+				}
+				next();
 			});
 		}
 	}
