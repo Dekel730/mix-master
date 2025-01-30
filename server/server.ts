@@ -31,10 +31,11 @@ app.use(mongoSanitize());
 
 connectDB(() => {
 	if (process.env.NODE_ENV !== 'test') {
-		http.createServer(app).listen(PORT, () => {
-			console.log(`server is running on port ${PORT}`);
-		});
 		if (process.env.NODE_ENV !== 'production') {
+			http.createServer(app).listen(PORT, () => {
+				console.log(`server is running on port ${PORT}`);
+			});
+		} else {
 			const options = {
 				key: fs.readFileSync('./client-key.pem'),
 				cert: fs.readFileSync('./client-cert.pem'),
