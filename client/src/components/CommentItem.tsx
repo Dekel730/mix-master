@@ -4,11 +4,12 @@ import LikeButton from './LikeButton';
 import { UserPost } from '../types/user';
 import ItemUser from './ItemUser';
 import IconMenu from './IconMenu';
-import { FaEllipsisV, FaTrash } from 'react-icons/fa';
+import { FaComment, FaEllipsisV, FaTrash } from 'react-icons/fa';
 import Spinner from './Spinner';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { authDel } from '../utils/requests';
+import CounterButton from './CounterButton';
 
 interface CommentItemProps {
 	comment: IComment;
@@ -16,7 +17,7 @@ interface CommentItemProps {
 	commentLike: (commentId: string) => Promise<void>;
 	openReply: string;
 	user: UserPost;
-    deleteComment: (commentId: string) => void;
+	deleteComment: (commentId: string) => void;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -25,11 +26,11 @@ const CommentItem: React.FC<CommentItemProps> = ({
 	openReply,
 	user,
 	commentLike,
-    deleteComment
+	deleteComment,
 }) => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    const { logout } = useAuth();
+	const { logout } = useAuth();
 	const handleReply = (commentId: string) => {
 		if (openReply === commentId) {
 			reply('');
@@ -39,18 +40,22 @@ const CommentItem: React.FC<CommentItemProps> = ({
 	};
 
 	const deleteCommentRequest = async () => {
-        setIsLoading(true);
-        await authDel(`/comment/${comment._id}`, (message: string, auth?: boolean) => {
-            toast.error(message);
-            if (auth) {
-                logout();
-            }
-        }, () => {
-            toast.success('Comment deleted successfully');
-            deleteComment(comment._id);
-        });
-        setIsLoading(false);
-    };
+		setIsLoading(true);
+		await authDel(
+			`/comment/${comment._id}`,
+			(message: string, auth?: boolean) => {
+				toast.error(message);
+				if (auth) {
+					logout();
+				}
+			},
+			() => {
+				toast.success('Comment deleted successfully');
+				deleteComment(comment._id);
+			}
+		);
+		setIsLoading(false);
+	};
 
 	const options = [
 		{
@@ -85,22 +90,19 @@ const CommentItem: React.FC<CommentItemProps> = ({
 				)}
 			</div>
 			<p className="text-gray-400 mb-4 ml-8">{comment.content}</p>
-			<div className="flex items-center gap-4">
+			<div className="flex flex-col md:flex-row items-center gap-4 md:gap-0 md:space-x-4">
 				<LikeButton
 					itemId={comment._id}
 					likeAction={commentLike}
 					likeCount={comment.likes.length}
 					isLiked={comment.likes.includes(user._id)}
 				/>
-				<button
-					className="flex items-center text-gray-500 space-x-2 px-4 py-2 rounded-md"
+				<CounterButton
 					onClick={() => handleReply(comment._id)}
-				>
-					Reply
-				</button>
-				<span className="text-gray-500">
-					{comment.replies.length} Replies
-				</span>
+					label="Reply"
+					count={comment.replies.length}
+					Icon={FaComment}
+				/>
 			</div>
 		</div>
 	);

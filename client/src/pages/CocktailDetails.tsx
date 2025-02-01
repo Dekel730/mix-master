@@ -27,6 +27,7 @@ import IconMenu from '../components/IconMenu';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import ShiningText from '../components/ShiningText';
+import CounterButton from '../components/CounterButton';
 
 const CocktailDisplay: React.FC = () => {
 	const [cocktail, setCocktail] = useState<ICocktail>(cocktailDefault);
@@ -430,17 +431,19 @@ const CocktailDisplay: React.FC = () => {
 					<p className="mt-2 text-gray-400">{cocktail.description}</p>
 					{cocktail.ai && <ShiningText text="Generated with AI" />}
 
-					<div className="mt-6 flex items-center">
+					<div className="mt-6 flex flex-col md:flex-row items-center gap-4 md:gap-0 md:space-x-4">
 						<LikeButton
 							itemId={cocktail._id}
 							likeAction={handlePostLike}
 							likeCount={cocktail.likes.length}
 							isLiked={cocktail.likes.includes(user._id)}
 						/>
-						<button className="ml-4 flex items-center transition-colors cursor-default">
-							<FaComment className="mr-2" />
-							{cocktail.commentCount}
-						</button>
+						<CounterButton
+							onClick={() => {}}
+							label="Comments"
+							Icon={FaComment}
+							count={cocktail.commentCount}
+						/>
 					</div>
 
 					<div className="mt-8">
