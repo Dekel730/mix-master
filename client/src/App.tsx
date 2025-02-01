@@ -23,6 +23,7 @@ import Verify from './pages/Verify';
 import EmailPassword from './pages/EmailPassword';
 import ResetPassword from './pages/ResetPassword';
 import EditCocktail from './pages/EditCocktail';
+import Page404 from './pages/Page404';
 
 TimeAgo.addDefaultLocale(en);
 
@@ -133,6 +134,7 @@ function App() {
 								</ProtectedRoute>
 							}
 						/>
+						<Route path="*" element={<Page404 />} />
 					</Routes>
 				</Router>
 			</GoogleOAuthProvider>

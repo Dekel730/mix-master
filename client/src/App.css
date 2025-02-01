@@ -62,3 +62,60 @@ body {
 	-ms-overflow-style: none; /* Hides scrollbar for IE and Edge */
 	scrollbar-width: none; /* Hides scrollbar for Firefox */
 }
+
+.neon-wrapper {
+	width: 100%;
+	height: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	background: #141414;
+}
+.neon-text {
+	line-height: 110%;
+	color: #fff;
+	text-shadow: 0 0 6px #fff, 0 0 24px #fff, 0 0 50px #fff, 0 0 80px #d93025,
+		0 0 130px #d93025, 0 0 160px #d93025, 0 0 180px #d93025;
+}
+.neon-text.big {
+	font-size: 10rem;
+	letter-spacing: 1rem;
+}
+.neon-text.small {
+	font-size: 2rem;
+}
+.animated {
+	-webkit-animation: flicker 3s linear infinite;
+	animation: flicker 3s linear infinite;
+}
+@-webkit-keyframes flicker {
+	0%,
+	18%,
+	22%,
+	28%,
+	100% {
+		text-shadow: 0 0 6px #fff, 0 0 24px #fff, 0 0 50px #fff,
+			0 0 80px #d93025, 0 0 130px #d93025, 0 0 160px #d93025,
+			0 0 180px #d93025;
+	}
+	20%,
+	24% {
+		text-shadow: none;
+	}
+}
+@keyframes flicker {
+	0%,
+	18%,
+	22%,
+	28%,
+	100% {
+		text-shadow: 0 0 6px #fff, 0 0 24px #fff, 0 0 50px #fff,
+			0 0 80px #d93025, 0 0 130px #d93025, 0 0 160px #d93025,
+			0 0 180px #d93025;
+	}
+	20%,
+	24% {
+		text-shadow: none;
+	}
+}
