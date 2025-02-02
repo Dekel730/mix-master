@@ -134,7 +134,14 @@ function App() {
 								</ProtectedRoute>
 							}
 						/>
-						<Route path="*" element={<Page404 />} />
+						<Route
+							path="*"
+							element={
+								<ProtectedRoute>
+									<Page404 />
+								</ProtectedRoute>
+							}
+						/>
 					</Routes>
 				</Router>
 			</GoogleOAuthProvider>
