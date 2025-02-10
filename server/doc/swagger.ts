@@ -1,5 +1,9 @@
 import components from './components';
 import userPaths from './userPaths';
+import commentPaths from './commentPaths';
+import cocktailPaths from './cocktailPaths';
+import postPaths from './postPaths';
+
 
 const swaggerSpec = {
 	openapi: '3.1.0',
@@ -10,10 +14,10 @@ const swaggerSpec = {
 	},
 	servers: [
 		{
-			url: 'http://localhost:3000',
+			url: 'http://node98.cs.colman.ac.il',
 		},
 	],
-	paths: {...userPaths},
+	paths: {...userPaths, ...commentPaths, ...cocktailPaths, ...postPaths},
 	components
 };
 
