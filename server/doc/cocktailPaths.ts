@@ -1,57 +1,6 @@
 import { errorHandler } from "./components";
 
 const cocktailPaths = {
-    '/api/cocktails': {
-      get: {
-        tags: ['Cocktails'],
-        summary: 'Get all cocktails',
-        description: 'Retrieve all cocktails from the database',
-        security: [{ jwtAuth: [] }],
-        responses: {
-          200: {
-            description: 'Cocktails retrieved successfully',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    success: { type: 'boolean', example: true },
-                    cocktails: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        properties: {
-                          _id: { type: 'string', example: '11007' },
-                          title: { type: 'string', example: 'Margarita' },
-                          image: { type: 'string', example: 'https://example.com/margarita.jpg' },
-                          instructions: {
-                            type: 'array',
-                            items: { type: 'string' },
-                            example: ['Shake all ingredients.', 'Pour into a glass.'],
-                          },
-                          ingredients: {
-                            type: 'array',
-                            items: {
-                              type: 'object',
-                              properties: {
-                                name: { type: 'string', example: 'Tequila' },
-                                amount: { type: 'string', example: '1 1/2 oz' },
-                              },
-                            },
-                          },
-                          description: { type: 'string', example: 'Cocktail' },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          ...errorHandler(500, 'Some server error', 'Server error'),
-        },
-      },
-    },
     '/api/cocktails/random': {
       get: {
         tags: ['Cocktails'],

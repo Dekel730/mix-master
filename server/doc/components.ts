@@ -55,6 +55,14 @@ const components = {
 					format: 'email',
 					description: 'Email address of the user',
 				},
+				bio: {
+					type: 'string',
+					description: 'Short bio of the user',
+				},
+				gender: {
+					type: 'string',
+					description: 'Male, Female or Other'
+				},
 				password: {
 					type: 'string',
 					format: 'password',
@@ -193,7 +201,6 @@ const components = {
 			},
 			required: [
 				'title',
-				'images',
 				'ingredients',
 				'instructions',
 				'user',
