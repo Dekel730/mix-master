@@ -763,7 +763,7 @@ const sendEmailPasswordReset = asyncHandler(
 		const hashedToken = await bcrypt.hash(token, salt);
 		user.resetPasswordToken = hashedToken;
 		user.resetPasswordTokenExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
-		user.save();
+		await user.save();
 		const htmlContent = `
 			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
 				<img src="${process.env.HOST_ADDRESS}/logo.png" alt="Mix Master Logo" style="width: 100px; display: block; margin: 0 auto 20px;" />
@@ -808,7 +808,9 @@ const resetPassword = asyncHandler(
 				'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number'
 			);
 		}
-		const user = await User.findOne({ email });
+		const user = await User.findOne({
+			email: { $regex: new RegExp(`^${email}$`, 'i') },
+		});
 		if (!user) {
 			res.status(400);
 			throw new Error('Invalid token');
