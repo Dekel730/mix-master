@@ -107,6 +107,7 @@ const CocktailDisplay = ({
 						emulateTouch={true}
 						swipeable={true}
 						dynamicHeight={true}
+						onClickItem={goToCocktail}
 					>
 						{cocktail.images.map((image: string, index: number) => (
 							<div key={index}>
