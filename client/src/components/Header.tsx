@@ -7,15 +7,15 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import IconMenu from './IconMenu';
 import { useAuth } from '../context/AuthContext';
+import { useEffect, useState } from 'react';
 
 interface HeaderProps {
 	setIsLoading: (isLoading: boolean) => void;
 }
 const Header = ({ setIsLoading }: HeaderProps) => {
 	const navigate = useNavigate();
-	const { logout } = useAuth();
-
-	const user: IUserProfile = JSON.parse(localStorage.getItem('user') || '{}');
+	const { logout, change } = useAuth();
+	const [user, setUser] = useState<IUserProfile>(JSON.parse(localStorage.getItem('user') || '{}'));
 
 	const handleLogout = async () => {
 		setIsLoading(true);
@@ -71,6 +71,10 @@ const Header = ({ setIsLoading }: HeaderProps) => {
 			id: 'logout',
 		},
 	];
+
+	useEffect(() => {
+		setUser(JSON.parse(localStorage.getItem('user') || '{}'));
+	}, [change]);
 
 	return (
 		<header className="bg-[#212121] p-4 flex justify-between items-center">
