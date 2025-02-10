@@ -38,7 +38,7 @@ function App() {
 
 	return (
 		<>
-			<ToastContainer theme="colored" />
+			<ToastContainer theme="dark" />
 			<GoogleOAuthProvider
 				clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
 			>
