@@ -20,7 +20,7 @@ interface PersonalDetailsProps {
 	setUser: (user: IUserSettings) => void;
 }
 const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
-	const { logout } = useAuth();
+	const { logout, setChange, change } = useAuth();
 	const schema = z.object({
 		f_name: z.string().nonempty("First name can't be empty"),
 		l_name: z.string().nonempty("Last name can't be empty"),
@@ -62,7 +62,6 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 	};
 
 	const submit = async (data: FieldValues) => {
-		console.log(data);
 		const formData = new FormData();
 		formData.append('f_name', data.f_name);
 		formData.append('l_name', data.l_name);
@@ -84,6 +83,7 @@ const PersonalDetails = ({ user, setUser }: PersonalDetailsProps) => {
 			},
 			(data: any) => {
 				localStorage.setItem('user', JSON.stringify(data.user));
+				setChange(change + 1);
 				setUser({
 					f_name: data.user.f_name,
 					l_name: data.user.l_name,

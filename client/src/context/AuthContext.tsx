@@ -6,6 +6,8 @@ interface AuthContextType {
 	isAuthenticated: boolean;
 	login: (user: IUserProfile) => void;
 	logout: () => void;
+	setChange: (num: number) => void;
+	change: number;
 }
 
 // Create the context with a default value (will be overridden by the provider)
@@ -21,6 +23,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
 		() => localStorage.getItem('isAuthenticated') === 'true'
 	);
+	const [change, setChange] = useState<number>(0);
 
 	// Login function
 	const login = () => {
@@ -40,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	return (
 		<AuthContext.Provider
-			value={{ isAuthenticated, login, logout }}
+			value={{ isAuthenticated, login, logout, setChange, change }}
 		>
 			{children}
 		</AuthContext.Provider>
