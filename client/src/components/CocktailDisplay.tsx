@@ -9,6 +9,8 @@ import { ICocktail } from '../types/cocktail';
 import ItemUser from './ItemUser';
 import Spinner from './Spinner';
 import { useAuth } from '../context/AuthContext';
+import GlowingDiv from './GlowingDiv';
+import CounterButton from './CounterButton';
 
 interface CocktailDisplayProps {
 	cocktail: ICocktail;
@@ -77,75 +79,85 @@ const CocktailDisplay = ({
 	};
 
 	return (
-		<div className="bg-[#212121] rounded-lg border border-zinc-700">
-			<div
-				className={`p-4 flex items-center ${
-					loader ? 'hidden' : 'visible'
-				}`}
-			>
-				<ItemUser user={cocktail.user} createdAt={cocktail.createdAt} />
-				{user._id === cocktail.user._id && (
-					<IconMenu
-						Icon={<FaEllipsisV className="h-4 w-4" />}
-						options={options}
-						buttonClassName="flex justify-center items-center w-9 h-9"
+		<div>
+			<GlowingDiv>
+				<div
+					className={`p-4 flex items-center ${
+						loader ? 'hidden' : 'visible'
+					}`}
+				>
+					<ItemUser
+						user={cocktail.user}
+						createdAt={cocktail.createdAt}
 					/>
-				)}
-			</div>
-			<div className={`p-4 space-y-4 ${loader ? 'hidden' : 'visible'}`}>
-				<Link to={`/cocktail/${cocktail._id}`}>
-					<h1 className="text-2xl font-bold text-center p-1">
-						{cocktail.title}
-					</h1>
-				</Link>
-				<p className="text-sm text-gray-200">{cocktail.description}</p>
-				{cocktail.images.length > 0 && (
-					<Carousel
-						showThumbs={false}
-						showStatus={false}
-						infiniteLoop={true}
-						emulateTouch={true}
-						swipeable={true}
-						dynamicHeight={true}
-						onClickItem={goToCocktail}
+					{user._id === cocktail.user._id && (
+						<IconMenu
+							Icon={<FaEllipsisV className="h-4 w-4" />}
+							options={options}
+							buttonClassName="flex justify-center items-center w-9 h-9"
+						/>
+					)}
+				</div>
+				<div
+					className={`p-4 space-y-4 ${loader ? 'hidden' : 'visible'}`}
+				>
+					<Link to={`/cocktail/${cocktail._id}`}>
+						<h1 className="text-2xl font-bold text-center p-1">
+							{cocktail.title}
+						</h1>
+					</Link>
+					<p className="text-sm text-gray-200">
+						{cocktail.description}
+					</p>
+					{cocktail.images.length > 0 && (
+						<Carousel
+							showThumbs={false}
+							showStatus={false}
+							infiniteLoop={true}
+							emulateTouch={true}
+							swipeable={true}
+							dynamicHeight={true}
+							onClickItem={goToCocktail}
 					>
-						{cocktail.images.map((image: string, index: number) => (
-							<div key={index}>
-								<img
-									src={`${
-										import.meta.env.VITE_API_ADDRESS
-									}/${image}`}
-									alt={`${cocktail.title} - Image ${
-										index + 1
-									}`}
-									className="w-full object-contain max-h-[600px]"
-								/>
-							</div>
-						))}
-					</Carousel>
-				)}
+							{cocktail.images.map(
+								(image: string, index: number) => (
+									<div key={index}>
+										<img
+											src={`${
+												import.meta.env.VITE_API_ADDRESS
+											}/${image}`}
+											alt={`${cocktail.title} - Image ${
+												index + 1
+											}`}
+											className="w-full object-contain max-h-[600px]"
+										/>
+									</div>
+								)
+							)}
+						</Carousel>
+					)}
 
-				<div className="flex items-center space-x-4">
-					<LikeButton
-						itemId={cocktail._id}
-						likeAction={handlePostLike}
-						likeCount={cocktail.likes.length}
-						isLiked={cocktail.likes.includes(user._id)}
-					/>
-					<button
-						onClick={goToCocktail}
-						className="flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-zinc-700"
-					>
-						<FaComment className="h-4 w-4" />
-						<span>{cocktail.commentCount}</span>
-					</button>
+					<div className="flex flex-col md:flex-row items-center gap-4 md:gap-0 md:space-x-4">
+						<LikeButton
+							itemId={cocktail._id}
+							likeAction={handlePostLike}
+							likeCount={cocktail.likes.length}
+							isLiked={cocktail.likes.includes(user._id)}
+						/>
+						<CounterButton
+							onClick={goToCocktail}
+							label="Comments"
+							count={cocktail.commentCount}
+							Icon={FaComment}
+						/>
+					</div>
 				</div>
-			</div>
-			{loader && (
-				<div className="flex justify-center items-center w-full">
-					<Spinner height="h-32" width="w-32" />
-				</div>
-			)}
+				{loader && (
+					<div className="flex justify-center items-center w-full">
+						<Spinner height="h-32" width="w-32" />
+					</div>
+				)}
+			</GlowingDiv>
 		</div>
 	);
 };

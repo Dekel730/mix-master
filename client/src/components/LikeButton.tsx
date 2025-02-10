@@ -1,47 +1,90 @@
-import { useState } from "react";
-import { FaHeart } from "react-icons/fa";
-import Spinner from "./Spinner";
+import { useState } from 'react';
+import './LikeButton.css';
+import Spinner from './Spinner';
 
 interface LikeButtonProps {
-    itemId: string; // מזהה הפוסט
-    isLiked: boolean; // האם המשתמש לייק
-    likeCount: number; // מספר הלייקים
-    likeAction: (itemId: string) => Promise<void>; // פעולת הלייק
+	itemId: string; // מזהה הפוסט
+	isLiked: boolean; // האם המשתמש לייק
+	likeCount: number; // מספר הלייקים
+	likeAction: (itemId: string) => Promise<void>; // פעולת הלייק
 }
 
 const LikeButton = ({
-    itemId,
-    likeCount,
-    isLiked,
-    likeAction,
+	itemId,
+	likeCount,
+	isLiked,
+	likeAction,
 }: LikeButtonProps) => {
-    const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 
-    // פונקציה לטיפול בלחיצה על כפתור הלייק
-    const likeUnlike = async (
-        e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-    ) => {
-        e.stopPropagation(); // מונע שהתהליך יפגע בלחיצות אחרות
-        setIsLoading(true);
-        await likeAction(itemId);
-        setIsLoading(false);
-    };
+	// פונקציה לטיפול בלחיצה על כפתור הלייק
+	const likeUnlike = async (
+		e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+	) => {
+		e.stopPropagation(); // מונע שהתהליך יפגע בלחיצות אחרות
+		setIsLoading(true);
+		await likeAction(itemId);
+		setIsLoading(false);
+	};
 
-    return (
-        <button
-            onClick={likeUnlike} // פעולת הלייק/לא לייק
-            disabled={isLoading} // אם הפונקציה בטעינה, לא ניתן ללחוץ
-            className="flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-[#D93025]/10"
-        >
-            <FaHeart
-                className={`h-4 w-4 ${isLiked ? "text-[#D93025]" : ""}`} // צבע הלייק אם נעשה
-            />
-            <span className={isLiked ? "text-[#D93025]" : ""}>
-                {isLoading ? <Spinner /> : likeCount}{" "}
-                {/* אם בטעינה, מראה את הספינר, אחרת את מספר הלייקים */}
-            </span>
-        </button>
-    );
+	return (
+		<button
+			onClick={likeUnlike} // פעולת הלייק/לא לייק
+			disabled={isLoading}
+			className="like-button w-full md:w-32"
+		>
+			<input
+				className="on"
+				checked={isLiked}
+				id={`heart${itemId}`}
+				style={{ display: 'none' }}
+				readOnly
+				type="checkbox"
+			/>
+			<label
+				className="like justify-around md:justify-between h-full gap-3 mx-2 flex-1"
+				htmlFor={`heart${itemId}`}
+			>
+				<svg
+					className="like-icon"
+					fillRule="nonzero"
+					viewBox="0 0 24 24"
+					xmlns="http://www.w3.org/2000/svg"
+				>
+					<path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"></path>
+				</svg>
+				{isLoading ? (
+					<Spinner width="w-[2.2rem]" />
+				) : (
+					<span className="like-text">Likes</span>
+				)}
+			</label>
+			<div
+				className="font-mono"
+				style={{
+					width: '30%',
+					position: 'relative',
+					overflow: 'hidden',
+					height: '100%',
+				}}
+			>
+				<input
+					className="on"
+					checked={isLiked}
+					id={`heart${itemId}`}
+					style={{ display: 'none' }}
+					readOnly
+					type="checkbox"
+				/>
+				<span className="like-count one">
+					{isLiked ? likeCount - 1 : likeCount}
+				</span>
+				<span className="like-count two">
+					{isLiked ? likeCount : likeCount + 1}
+				</span>
+			</div>
+		</button>
+	);
 };
 
 export default LikeButton;

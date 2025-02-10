@@ -296,7 +296,7 @@ const Home = () => {
 
 	return (
 		<main className=" bg-[#1a1a1a] text-white">
-			<div className="w-full flex-1 p-4 text-center">
+			<div className="w-full max-w-6xl mx-auto p-4 text-center">
 				<h1 className="text-2xl font-bold mb-6">Home</h1>
 				<div className="flex flex-col md:flex-row gap-4 text-start min-h-[calc(100vh-200px)]">
 					{/* Sidebar container */}
@@ -362,7 +362,11 @@ const Home = () => {
 							setUsers={setUsersData}
 							errors={errors}
 							setValue={setValue}
-							query={activeTab === 'search' ? searchQuery : searchUsers}
+							query={
+								activeTab === 'search'
+									? searchQuery
+									: searchUsers
+							}
 						/>
 					</div>
 				</div>
